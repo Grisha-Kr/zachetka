@@ -79,16 +79,26 @@ onRecordUpdateRequest((e) => {
   e.next();
 }, "attachments");
 
-// Адрес приложения для писем (сброс пароля) берётся из переменной APP_URL.
+// Настройки из окружения:
+// APP_URL — адрес приложения для писем (сброс пароля);
+// BEHIND_PROXY=1 — приложение стоит за Caddy, настоящий IP посетителя берётся из X-Forwarded-For.
 onBootstrap((e) => {
   e.next();
-  const url = $os.getenv("APP_URL");
-  if (!url) return;
   const s = $app.settings();
-  if (s.meta.appURL !== url) {
+  let changed = false;
+  const url = $os.getenv("APP_URL");
+  if (url && s.meta.appURL !== url) {
     s.meta.appURL = url;
-    $app.save(s);
+    changed = true;
   }
+  if ($os.getenv("BEHIND_PROXY") === "1") {
+    const h = s.trustedProxy.headers || [];
+    if (h.length !== 1 || h[0] !== "X-Forwarded-For") {
+      s.trustedProxy.headers = ["X-Forwarded-For"];
+      changed = true;
+    }
+  }
+  if (changed) $app.save(s);
 });
 
 // Сведения для экрана входа и политики конфиденциальности.
