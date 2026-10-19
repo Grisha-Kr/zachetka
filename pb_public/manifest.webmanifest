@@ -1,0 +1,16 @@
+{
+  "name": "Моя зачётка",
+  "short_name": "Зачётка",
+  "description": "Учёт учёбы: предметы, задания, сессии и дипломные работы",
+  "lang": "ru",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f1f4f6",
+  "theme_color": "#1c5a63",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
