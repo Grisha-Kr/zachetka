@@ -17,6 +17,7 @@ const MB = 1024*1024;
 const MAX_FILE = 20*MB;
 const PBN = {inst:'institutions', subjects:'subjects', tasks:'tasks', sessions:'sessions', theses:'theses', stages:'stages', notes:'notes', att:'attachments'};
 const KEYS = Object.keys(PBN);
+const SOON_DAYS = 31; // сколько дней вперёд показывать сроки на главной
 
 /* ---------- Состояние ---------- */
 const S = {inst:[], subjects:[], tasks:[], sessions:[], theses:[], stages:[], notes:[], att:[], invites:[], loaded:false};
@@ -206,15 +207,15 @@ function vHome(){
   if(!S.inst.length) return firstRun();
   const open = S.tasks.filter(x => x.status !== 'done');
   const overdue = open.filter(isOverdue).sort(taskSort);
-  const soon = open.filter(x => x.due && diff(x.due) >= 0 && diff(x.due) <= 14).sort(taskSort);
-  const working = open.filter(x => (x.status === 'started' || x.status === 'finishing') && !(x.due && diff(x.due) <= 14)).sort(taskSort);
+  const soon = open.filter(x => x.due && diff(x.due) >= 0 && diff(x.due) <= SOON_DAYS).sort(taskSort);
+  const working = open.filter(x => (x.status === 'started' || x.status === 'finishing') && !(x.due && diff(x.due) <= SOON_DAYS)).sort(taskSort);
   const passed = S.subjects.filter(s => s.status === 'passed').length;
   const inWork = open.filter(x => x.status === 'started' || x.status === 'finishing').length;
 
   let left = '';
   if(overdue.length) left += `<section class="section"><h3 class="sec-title">Просрочено <span class="count">${overdue.length}</span></h3>${taskList(overdue)}</section>`;
-  left += `<section class="section"><h3 class="sec-title">Сроки на две недели <span class="count">${soon.length}</span></h3>${soon.length ? taskList(soon) : `<div class="empty">На ближайшие 14 дней сроков нет.</div>`}</section>`;
-  left += `<section class="section"><h3 class="sec-title">В работе, срок позже <span class="count">${working.length}</span></h3>${working.length ? taskList(working) : `<div class="empty">Здесь появятся задания со статусом «Приступил» или «Заканчиваю», у которых срок дальше двух недель.</div>`}</section>`;
+  left += `<section class="section"><h3 class="sec-title">Сроки на месяц <span class="count">${soon.length}</span></h3>${soon.length ? taskList(soon) : `<div class="empty">В ближайший месяц (31 день) сроков нет.</div>`}</section>`;
+  left += `<section class="section"><h3 class="sec-title">В работе, срок позже <span class="count">${working.length}</span></h3>${working.length ? taskList(working) : `<div class="empty">Здесь появятся задания со статусом «Приступил» или «Заканчиваю», у которых срок дальше месяца.</div>`}</section>`;
   left += `<div class="actions"><button class="btn primary" data-act="new-task">+ Задание</button></div>`;
 
   const ns = nextSession();
@@ -251,7 +252,7 @@ function vHome(){
 
   return `<div class="stats">
       <div class="stat${overdue.length ? ' alert' : ''}"><b>${overdue.length}</b><span>просрочено</span></div>
-      <div class="stat"><b>${soon.length}</b><span>сроков за 14 дней</span></div>
+      <div class="stat"><b>${soon.length}</b><span>сроков за 31 день</span></div>
       <div class="stat"><b>${inWork}</b><span>в работе</span></div>
       <div class="stat"><b>${passed}<span class="muted" style="font-size:18px">/${S.subjects.length}</span></b><span>предметов сдано</span></div>
     </div>
