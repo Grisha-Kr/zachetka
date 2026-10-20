@@ -5,13 +5,17 @@ set -euo pipefail
 APP=/opt/zachetka
 [ "$(id -u)" = "0" ] || { echo "Запустите от имени root."; exit 1; }
 
+# Если что-то пойдёт не так, приложение всё равно запустится снова на старой версии.
+trap 'systemctl start zachetka || true' EXIT
+
 echo "Делаю резервную копию базы перед обновлением…"
 mkdir -p "$APP/pb_data/backups"
 systemctl stop zachetka
 tar -czf "$APP/pb_data/backups/before-update-$(date +%Y%m%d-%H%M).tar.gz" -C "$APP/pb_data" data.db auxiliary.db 2>/dev/null || true
 
 echo "Загружаю новую версию кода…"
-git -C "$APP/src" pull --ff-only
+# Папка с кодом принадлежит пользователю zachetka, поэтому git нужно явно разрешить работать с ней от root.
+git -c safe.directory="$APP/src" -C "$APP/src" pull --ff-only
 chown -R zachetka:zachetka "$APP"
 
 systemctl start zachetka

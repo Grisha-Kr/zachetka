@@ -55,7 +55,7 @@ say "3/7. Загружаю код приложения"
 id "$APP" >/dev/null 2>&1 || useradd --system --home-dir "$APP_DIR" --shell /usr/sbin/nologin "$APP"
 mkdir -p "$APP_DIR"
 if [ -d "$APP_DIR/src/.git" ]; then
-  git -C "$APP_DIR/src" pull --ff-only
+  git -c safe.directory="$APP_DIR/src" -C "$APP_DIR/src" pull --ff-only
 else
   git clone --depth 1 "$REPO_URL" "$APP_DIR/src"
 fi
