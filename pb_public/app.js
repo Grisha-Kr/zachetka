@@ -22,6 +22,24 @@ const KEYS = Object.keys(PBN);
 const S = {inst:[], subjects:[], tasks:[], sessions:[], theses:[], stages:[], notes:[], att:[], invites:[], loaded:false};
 const loadLS = (k, d) => { try { const v = localStorage.getItem('zach_'+k); return v == null ? d : JSON.parse(v); } catch(e){ return d; } };
 const saveLS = (k, v) => { try { localStorage.setItem('zach_'+k, JSON.stringify(v)); } catch(e){} };
+/* ---------- Тема оформления: auto (как в системе), light, dark ---------- */
+const darkMQ = window.matchMedia('(prefers-color-scheme: dark)');
+const ICON_SUN = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+const ICON_MOON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.5A8.5 8.5 0 019.5 3.5a8.5 8.5 0 1011 11z"/></svg>';
+function themePref(){ const t = loadLS('theme', 'auto'); return t === 'light' || t === 'dark' ? t : 'auto'; }
+function isDark(){ const t = themePref(); return t === 'dark' || (t === 'auto' && darkMQ.matches); }
+function applyTheme(){
+  const t = themePref(), root = document.documentElement;
+  if(t === 'auto') delete root.dataset.theme; else root.dataset.theme = t;
+  const dark = isDark();
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', dark ? '#10161b' : '#f1f4f6'));
+  const b = document.getElementById('theme-btn');
+  if(b){ b.innerHTML = dark ? ICON_SUN : ICON_MOON; const l = dark ? 'Светлая тема' : 'Тёмная тема'; b.title = l; b.setAttribute('aria-label', l); }
+}
+function setTheme(t){ saveLS('theme', t); applyTheme(); }
+darkMQ.addEventListener && darkMQ.addEventListener('change', () => { if(themePref() === 'auto') applyTheme(); });
+applyTheme();
+
 const UI = {
   tab: loadLS('tab','home'), subjectId:null,
   f: loadLS('filters', {inst:'', subj:'', st:'open'}),
@@ -826,6 +844,11 @@ async function cycle(colName, id){
 function go(tab){ UI.tab = tab; UI.subjectId = null; saveLS('tab', tab); render(); window.scrollTo(0, 0); if(tab === 'account') loadInvites(); }
 
 document.addEventListener('click', async e => {
+  if(e.target.closest('#theme-btn')){
+    setTheme(isDark() ? 'light' : 'dark');
+    if(UI.tab === 'account' && S.loaded) render();
+    return;
+  }
   const tabBtn = e.target.closest('[data-tab]');
   if(tabBtn){ go(tabBtn.dataset.tab); return; }
   const g = e.target.closest('[data-goto]');
@@ -876,6 +899,7 @@ document.addEventListener('click', async e => {
 });
 document.addEventListener('change', async e => {
   const t = e.target;
+  if(t.name === 'p-theme'){ setTheme(t.value); return; }
   if(t.matches('[data-filter]')){ UI.f[t.dataset.filter] = t.value; if(t.dataset.filter === 'inst') UI.f.subj = ''; saveLS('filters', UI.f); render(); return; }
   if(t.id === 'n-chf'){ UI.ch = t.value; $('#notes-list').innerHTML = notesList(); return; }
   if(t.id === 'tf-input'){
@@ -993,6 +1017,11 @@ function vAccount(){
       <label class="fld"><span>Почта</span><input type="email" value="${esc(u.email || '')}" disabled></label></div>
       <div class="actions"><button class="btn" data-act="save-name">Сохранить имя</button></div>
       <p class="hint">Файлы занимают ${fsize(used || 1)}.</p>
+    </section>
+    <section class="card"><h3>Оформление</h3>
+      <div class="seg" role="radiogroup" aria-label="Тема">${[['auto','Как в системе'],['light','Светлая'],['dark','Тёмная']].map(([k,l]) =>
+        `<input type="radio" name="p-theme" id="p-theme-${k}" value="${k}"${themePref() === k ? ' checked' : ''}><label for="p-theme-${k}">${l}</label>`).join('')}</div>
+      <p class="hint">Тема запоминается на этом устройстве. Быстро переключить можно значком солнца или луны вверху.</p>
     </section>
     <section class="card"><h3>Пароль</h3>
       <label class="fld"><span>Текущий пароль</span><input type="password" id="p-old" autocomplete="current-password"></label>

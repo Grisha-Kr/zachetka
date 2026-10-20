@@ -29,6 +29,7 @@
 ## Клиент (pb_public/app.js)
 - Внутренние ключи состояния: `inst, subjects, tasks, sessions, theses, stages, notes, att` (см. `PBN`). Адаптер `col(key).doc(id).set/update/delete` поверх SDK, id 15 символов генерирует клиент (`newId`).
 - Загрузка всего при входе (`loadAll`), живые обновления через `subscribe('*')`, перезагрузка при возврате на вкладку.
+- Тема: `zach_theme` в localStorage (auto/light/dark), кнопка солнце/луна в шапке (`#theme-btn`) и блок «Оформление» в профиле; ранний inline-скрипт в `<head>` ставит `data-theme` до загрузки CSS.
 - Файлы открываются по токену `pb.files.getToken()`; docx показывается через mammoth, PDF в новой вкладке.
 - Резервная копия: zip с `data.json` + `files/`. Импорт пересоздаёт записи с новыми id и тем же форматом (подходит и для архива переноса со старого сайта-артефакта).
 
