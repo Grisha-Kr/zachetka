@@ -36,6 +36,7 @@
 - Сервер: AdminVPS, тариф Micro (2 ядра, 4 ГБ, 60 ГБ), Ubuntu 24.04. Домен `grishaweb.ru` куплен в Beget (DNS у Beget). Приложение: `https://zachetka.grishaweb.ru`.
 - Схема на несколько приложений: Caddy (пакет из apt) слушает 80/443, сам получает сертификаты и проксирует по адресам. Главный файл `/etc/caddy/Caddyfile` импортирует `/etc/caddy/sites/*.caddy`.
 - Каждое приложение: папка `/opt/ИМЯ` (код в `src`, данные в `pb_data`, настройки в `ИМЯ.env`), системный пользователь и служба systemd `ИМЯ`, PocketBase на `127.0.0.1:ПОРТ`, файл `/etc/caddy/sites/ИМЯ.caddy`. Порты: zachetka 8090, следующие 8091, 8092 и так далее. Новое приложение = такой же install.sh со своими `APP`, `PORT`, `REPO_URL` и A-запись поддомена в DNS Beget.
+- В Caddy намеренно TLS только 1.2 (`protocols tls1.2 tls1.2` в каждом сайте) и HTTP/3 выключен (`servers { protocols h1 h2 }`): в части сетей РФ TLS 1.3 обрывается, так советует AdminVPS.
 - Установка: `deploy/install.sh АДРЕС ПОЧТА "ИМЯ"` (адрес полный, например zachetka.grishaweb.ru). ufw: 22/80/443. `BEHIND_PROXY=1` в env включает доверие к X-Forwarded-For.
 - Обновление: `bash /opt/zachetka/src/deploy/update.sh` (git pull + перезапуск, перед этим копия базы).
 - Резервные копии PocketBase: ежедневно в 3:00, хранится 14. Хостинг делает еженедельную копию сервера. Владельцу советовать скачивать копии к себе.

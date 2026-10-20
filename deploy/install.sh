@@ -113,17 +113,24 @@ systemctl is-active --quiet "$APP" || { journalctl -u "$APP" -n 30 --no-pager; f
 
 say "6/7. Настраиваю адрес https://$DOMAIN"
 mkdir -p /etc/caddy/sites
-if ! grep -q "import /etc/caddy/sites" /etc/caddy/Caddyfile 2>/dev/null; then
-  cat > /etc/caddy/Caddyfile <<EOF
+# HTTP/3 выключен, TLS только 1.2: в части российских сетей соединения с TLS 1.3
+# обрываются по дороге (рекомендация хостинга AdminVPS). Включить TLS 1.3 обратно:
+# в файлах /etc/caddy/sites/*.caddy заменить "tls1.2 tls1.2" на "tls1.2 tls1.3".
+cat > /etc/caddy/Caddyfile <<EOF
 {
 	email $CONTACT
+	servers {
+		protocols h1 h2
+	}
 }
 
 import /etc/caddy/sites/*.caddy
 EOF
-fi
 cat > "/etc/caddy/sites/$APP.caddy" <<EOF
 $DOMAIN {
+	tls {
+		protocols tls1.2 tls1.2
+	}
 	encode zstd gzip
 	reverse_proxy 127.0.0.1:$PORT
 }
