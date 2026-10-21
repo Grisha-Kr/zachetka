@@ -243,6 +243,9 @@ mark{background:color-mix(in srgb,var(--st-finish) 30%,transparent);color:inheri
 .file-main span{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
 .file-acts{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
 @media (max-width:520px){.file{grid-template-columns:40px minmax(0,1fr)}.file-acts{grid-column:1 / -1;justify-content:flex-start}}
+/* В узкой колонке диплома кнопки файла переносятся под название, чтобы имя не сжималось */
+.thesis-grid .file{grid-template-columns:44px minmax(0,1fr)}
+.thesis-grid .file-acts{grid-column:2 / -1;justify-content:flex-start;margin-left:-8px}
 .upload{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
 .upload input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .hint{font-size:12px;color:var(--muted)}
