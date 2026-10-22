@@ -155,7 +155,30 @@ async function startApp(){
     showNotice('Не удалось загрузить данные. ' + errText(e));
   }
 }
-document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && S.loaded && pb.authStore.isValid) loadAll().catch(() => {}); });
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState !== 'visible') return;
+  checkUpdate();
+  if(S.loaded && pb.authStore.isValid) loadAll().catch(() => {});
+});
+
+/* ---------- Проверка новой версии ---------- */
+// Сравниваем ?v= у app.js и app.css в открытой странице и в свежем index.html с сервера
+const verOf = html => (html.match(/\/app\.(?:js|css)\?v=\d+/g) || []).sort().join(' ');
+const MY_VER = verOf(document.documentElement.innerHTML);
+let lastCheck = 0;
+async function checkUpdate(){
+  if(!navigator.onLine || Date.now() - lastCheck < 60e3) return;
+  lastCheck = Date.now();
+  try {
+    const res = await fetch('/index.html', {cache: 'no-store'});
+    if(!res.ok) return;
+    const v = verOf(await res.text());
+    if(v && MY_VER && v !== MY_VER) $('#update-bar').hidden = false;
+  } catch(e){}
+}
+setInterval(checkUpdate, 30*60e3);
+$('#update-btn').addEventListener('click', () => location.reload());
+$('#update-close').addEventListener('click', () => { $('#update-bar').hidden = true; });
 window.addEventListener('online', () => { $('#notice').hidden = true; if(S.loaded) loadAll().catch(() => {}); });
 window.addEventListener('offline', () => showNotice('Нет подключения к интернету. Изменения сохранятся, когда связь вернётся, если не закрывать страницу.'));
 let raf = 0;
