@@ -323,9 +323,13 @@ function vSubject(s){
   const i = instOf(s.instId);
   const tasks = S.tasks.filter(t => t.subjectId === s.id).sort(taskSort);
   const exams = S.sessions.flatMap(se => (se.exams || []).filter(e => e.subjectId === s.id).map(e => ({...e, session: se.title})));
+  const byNew = (a,b) => (b.createdAt ?? 0) - (a.createdAt ?? 0);
+  const own = S.att.filter(f => f.subjectId === s.id).sort(byNew);
+  const fromTasks = tasks.flatMap(t => S.att.filter(f => f.taskId === t.id).map(f => ({f, t}))).sort((a,b) => byNew(a.f, b.f));
+  const filesN = own.length + fromTasks.length;
   return `<button class="btn ghost sm back" data-act="back">← Все предметы</button>
     <div class="detail-head"><span class="inst-tag c-${esc(i?.color || 'blue')}">${esc(i?.name || '')}</span><h2>${esc(s.name)}</h2>
-      <div class="actions"><button class="btn primary" data-act="new-task" data-subject="${esc(s.id)}">+ Задание</button><button class="btn" data-act="edit-subject" data-id="${esc(s.id)}">Изменить предмет</button></div></div>
+      <div class="actions"><button class="btn primary" data-act="new-task" data-subject="${esc(s.id)}">+ Задание</button><button class="btn" data-act="edit-subject" data-id="${esc(s.id)}">Редактировать</button></div></div>
     <dl class="dl">
       <div><dt>Статус</dt><dd>${s.status === 'passed' ? 'Сдал' : 'Готовлю'}</dd></div>
       <div><dt>Форма контроля</dt><dd>${esc(s.control || 'не указана')}</dd></div>
@@ -336,7 +340,11 @@ function vSubject(s){
     ${s.notes ? `<section class="section"><h3>Заметки</h3><div class="card prose">${esc(s.notes)}</div></section>` : ''}
     ${exams.length ? `<section class="section"><h3>В расписании сессий</h3><div class="card"><div class="mini-exams">${exams.map(e => `<div><span class="mono">${fmt(e.date) || 'дата?'}</span><span>${esc(e.kind || '')}${e.time ? ', ' + esc(e.time) : ''}${e.place ? ', ' + esc(e.place) : ''} <span class="muted">(${esc(e.session || 'сессия')})</span></span></div>`).join('')}</div></div></section>` : ''}
     <section class="section"><h3 class="sec-title">Задания <span class="count">${tasks.length}</span></h3>
-      ${tasks.length ? taskList(tasks, {subject:false}) : `<div class="empty">По этому предмету заданий пока нет.<button class="btn sm" data-act="new-task" data-subject="${esc(s.id)}">+ Задание</button></div>`}</section>`;
+      ${tasks.length ? taskList(tasks, {subject:false}) : `<div class="empty">По этому предмету заданий пока нет.<button class="btn sm" data-act="new-task" data-subject="${esc(s.id)}">+ Задание</button></div>`}</section>
+    <section class="section"><h3 class="sec-title">Файлы <span class="count">${filesN}</span></h3>
+      ${uploadBlock('sf-input')}
+      ${filesN ? `<div class="files">${own.map(f => fileRow(f, {caption:f.caption, edit:true})).join('')}${fromTasks.map(({f, t}) => fileRow(f, {caption:[f.caption, 'из задания «' + (t.title || 'Без названия') + '»'].filter(Boolean).join(' · '), edit:true})).join('')}</div>` : '<div class="empty">Конспекты лекций, сделанные домашние задания и другие материалы по предмету. Файлы, прикреплённые к заданиям, тоже появятся здесь.</div>'}
+    </section>`;
 }
 
 /* ---------- Задания ---------- */
@@ -477,7 +485,7 @@ function notesList(){
 
 /* ---------- Файлы ---------- */
 function uploadBlock(inputId){
-  return `<div class="upload"><input type="file" id="${inputId}" multiple accept="${ALLOWED.map(x => '.' + x).join(',')}"><label class="btn sm" for="${inputId}">Прикрепить файл</label><span class="hint">PDF, Word, Excel, фото и другие, до 20 МБ</span></div>`;
+  return `<div class="upload"><input type="file" id="${inputId}" multiple accept="${ALLOWED.map(x => '.' + x).join(',')}"><label class="btn sm" for="${inputId}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5.5 5.5 0 01-7.8-7.8l8.6-8.6a3.7 3.7 0 015.2 5.2l-8.6 8.6a1.8 1.8 0 01-2.6-2.6l7.9-7.9"/></svg>Прикрепить файл</label><span class="hint">PDF, Word, Excel, фото и другие, до 20 МБ</span></div>`;
 }
 function fileRow(f, o = {}){
   const ext = (f.ext || String(f.name || '').split('.').pop() || '').slice(0, 4);
@@ -503,6 +511,7 @@ async function uploadFile(file, link){
   fd.append('createdAt', String(Date.now()));
   if(link.taskId) fd.append('taskId', link.taskId);
   if(link.thesisId) fd.append('thesisId', link.thesisId);
+  if(link.subjectId) fd.append('subjectId', link.subjectId);
   fd.append('file', file);
   const rec = await pb.collection('attachments').create(fd);
   upsert('att', rec);
@@ -692,6 +701,7 @@ function openSubject(id, instId){
   const s = id ? subjOf(id) : null;
   if(!S.inst.length){ openInst(); return; }
   const tasksN = s ? S.tasks.filter(t => t.subjectId === s.id).length : 0;
+  const filesN = s ? S.att.filter(a => a.subjectId === s.id).length : 0;
   openForm({ title: s ? 'Предмет' : 'Новый предмет',
     fields:[
       {key:'name', label:'Название', required:true},
@@ -704,12 +714,12 @@ function openSubject(id, instId){
       {key:'notes', label:'Заметки', type:'textarea'}],
     values: s || {instId: instId || sortedInst()[0].id, status:'prep'},
     async onSave(v){ if(s) await col('subjects').doc(s.id).update(v); else await col('subjects').doc().set({...v, order:Date.now(), createdAt:Date.now()}); toast('Предмет сохранён'); },
-    confirmText: tasksN ? `Удалить вместе с заданиями (${tasksN})?` : 'Нажмите ещё раз, чтобы удалить',
+    confirmText: tasksN || filesN ? `Удалить вместе с ${[tasksN ? `заданиями (${tasksN})` : '', filesN ? `файлами (${filesN})` : ''].filter(Boolean).join(' и ')}?` : 'Нажмите ещё раз, чтобы удалить',
     onDelete: s ? async () => {
       const taskIds = new Set(S.tasks.filter(t => t.subjectId === s.id).map(t => t.id));
       await col('subjects').doc(s.id).delete();
       S.tasks = S.tasks.filter(t => !taskIds.has(t.id));
-      S.att = S.att.filter(a => !taskIds.has(a.taskId));
+      S.att = S.att.filter(a => !taskIds.has(a.taskId) && a.subjectId !== s.id);
       if(UI.subjectId === s.id) UI.subjectId = null;
       toast('Предмет удалён');
     } : null });
@@ -970,13 +980,15 @@ document.addEventListener('change', async e => {
   if(t.name === 'p-theme'){ setTheme(t.value); return; }
   if(t.matches('[data-filter]')){ UI.f[t.dataset.filter] = t.value; if(t.dataset.filter === 'inst') UI.f.subj = ''; saveLS('filters', UI.f); render(); return; }
   if(t.id === 'n-chf'){ UI.ch = t.value; $('#notes-list').innerHTML = notesList(); return; }
-  if(t.id === 'tf-input'){
-    const th = curThesis(); if(!th) return;
+  if(t.id === 'tf-input' || t.id === 'sf-input'){
+    let link;
+    if(t.id === 'tf-input'){ const th = curThesis(); if(!th) return; link = {thesisId: th.id}; }
+    else { const s = subjOf(UI.subjectId); if(!s) return; link = {subjectId: s.id}; }
     const list = [...t.files]; t.value = '';
     let last = null;
     for(const file of list){
       toast(`Загружаю «${file.name}»…`);
-      try { const rec = await uploadFile(file, {thesisId: th.id}); last = rec.id; toast('Файл загружен'); }
+      try { const rec = await uploadFile(file, link); last = rec.id; toast('Файл загружен'); }
       catch(err){ toast(uploadErr(err)); }
     }
     if(last && list.length === 1) setTimeout(() => openAtt(last), 300);
@@ -1237,9 +1249,9 @@ async function importData(file){
   const atts = data.attachments || [];
   if(atts.length) say(`файлы: ${atts.length}…`);
   for(const a of atts){
-    const taskId = relTo(a.taskId, 'tasks'), thesisId = relTo(a.thesisId, 'theses');
+    const taskId = relTo(a.taskId, 'tasks'), thesisId = relTo(a.thesisId, 'theses'), subjectId = relTo(a.subjectId, 'subjects');
     const entry = zip && a.path ? zip.file(a.path) : null;
-    if(!entry || (!taskId && !thesisId)){ fail++; say(`  пропущен файл: ${a.name || a.id}`); continue; }
+    if(!entry || (!taskId && !thesisId && !subjectId)){ fail++; say(`  пропущен файл: ${a.name || a.id}`); continue; }
     try{
       const blob = await entry.async('blob');
       const fd = new FormData();
@@ -1248,6 +1260,7 @@ async function importData(file){
       fd.append('createdAt', String(a.createdAt || Date.now()));
       if(taskId) fd.append('taskId', taskId);
       if(thesisId) fd.append('thesisId', thesisId);
+      if(subjectId) fd.append('subjectId', subjectId);
       fd.append('file', new File([blob], a.name || 'file'));
       const r = await pb.collection('attachments').create(fd); upsert('att', r); ok++;
     }catch(e){ fail++; say(`  файл не загружен: ${a.name} (${errText(e)})`); }
