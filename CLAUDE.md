@@ -11,7 +11,7 @@
 
 ## Стек и почему
 - **PocketBase 0.40.3** (одна программа: база SQLite, файлы, вход, панель администратора `/_/`, раздача статики). Выбран ради простоты обслуживания на дешёвом российском VPS без VPN и зарубежных оплат. Версия ещё не 1.0: перед обновлением читать заметки к выпуску; версия зафиксирована в `deploy/install.sh` (`PB_VERSION`).
-- Фронтенд без сборки: `pb_public/index.html`, `app.css`, `app.js` (обычный JS, одна IIFE). Библиотеки лежат в `pb_public/vendor/` (PocketBase JS SDK 0.28.1, mammoth для просмотра .docx, JSZip для резервных копий). Шрифты локально в `pb_public/fonts/` (Golos Text, Literata, JetBrains Mono, кириллица + латиница). Внешних CDN нет намеренно.
+- Фронтенд без сборки: `pb_public/index.html`, `app.css`, `app.js` (обычный JS, одна IIFE). Библиотеки лежат в `pb_public/vendor/` (PocketBase JS SDK 0.28.1, mammoth для просмотра .docx, pdf.js 4.10.38 legacy в `vendor/pdfjs/` для просмотра PDF, JSZip для резервных копий). Шрифты локально в `pb_public/fonts/` (Golos Text, Literata, JetBrains Mono, кириллица + латиница). Внешних CDN нет намеренно.
 - PWA: `manifest.webmanifest`, `sw.js` (кэширует только оболочку, `/api/` не трогает). При изменении `app.js`/`app.css` увеличивать `?v=` в `index.html` и `VERSION`/`SHELL` в `sw.js`. По этим `?v=` открытое приложение узнаёт о новой версии (`checkUpdate`: при возврате на вкладку, не чаще раза в минуту, и каждые 30 минут) и показывает плашку «Вышло обновление» с кнопкой «Обновить».
 
 ## Данные (pb_migrations/)
@@ -32,7 +32,7 @@
 - Внутренние ключи состояния: `inst, subjects, tasks, sessions, theses, stages, notes, att` (см. `PBN`). Адаптер `col(key).doc(id).set/update/delete` поверх SDK, id 15 символов генерирует клиент (`newId`).
 - Загрузка всего при входе (`loadAll`), живые обновления через `subscribe('*')`, перезагрузка при возврате на вкладку.
 - Тема: `zach_theme` в localStorage (auto/light/dark), кнопка солнце/луна в шапке (`#theme-btn`) и блок «Оформление» в профиле; ранний inline-скрипт в `<head>` ставит `data-theme` до загрузки CSS.
-- Файлы открываются по токену `pb.files.getToken()`; docx показывается через mammoth, PDF в новой вкладке.
+- Файлы открываются по токену `pb.files.getToken()`; docx показывается через mammoth, PDF рисуется в окне просмотра через pdf.js (страницы по мере прокрутки). Открывать PDF в новой вкладке нельзя: PocketBase отдаёт файлы с `Content-Security-Policy: sandbox`, и Chrome вместо просмотра показывает пустую вкладку и скачивает файл.
 - Резервная копия: zip с `data.json` + `files/`. Импорт пересоздаёт записи с новыми id и тем же форматом (подходит и для архива переноса со старого сайта-артефакта).
 
 ## Сервер и выкладка

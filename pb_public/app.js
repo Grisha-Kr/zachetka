@@ -551,23 +551,55 @@ function loadLib(src, global){
 }
 const viewer = $('#viewer');
 let viewing = null;
+let pdfView = null; // открытый PDF: документ и наблюдатель за страницами
+function closePdf(){ if(pdfView){ pdfView.obs.disconnect(); pdfView.doc.destroy(); pdfView = null; } $('#v-body').classList.remove('is-pdf'); }
 $('#v-close').addEventListener('click', () => viewer.close());
 $('#v-dl').addEventListener('click', () => viewing && downloadFile(viewing));
-viewer.addEventListener('close', () => { viewing = null; $('#v-body').innerHTML = ''; });
+viewer.addEventListener('close', () => { viewing = null; closePdf(); $('#v-body').innerHTML = ''; });
+// PDF показываем сами через pdf.js: сервер отдаёт файлы с CSP sandbox, и встроенный
+// просмотрщик Chrome в новой вкладке не запускается (пустая вкладка и скачивание).
+async function loadPdfJs(){
+  const lib = await import('/vendor/pdfjs/pdf.min.mjs');
+  lib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.mjs';
+  return lib;
+}
+async function showPdf(f, body){
+  const [lib, blob] = await Promise.all([loadPdfJs(), getBlob(f)]);
+  const doc = await lib.getDocument({data: new Uint8Array(await blob.arrayBuffer()), standardFontDataUrl: '/vendor/pdfjs/standard_fonts/', cMapUrl: '/vendor/pdfjs/cmaps/', cMapPacked: true}).promise;
+  if(viewing !== f){ doc.destroy(); return; }
+  const first = (await doc.getPage(1)).getViewport({scale: 1});
+  body.classList.add('is-pdf');
+  body.innerHTML = Array.from({length: doc.numPages}, (_, n) => `<div class="pdf-page" data-n="${n + 1}" style="aspect-ratio:${first.width}/${first.height}"><span>${n + 1}</span></div>`).join('');
+  // Страницы рисуются, когда до них доходит прокрутка: большой файл не съест память телефона
+  const draw = async el => {
+    const page = await doc.getPage(+el.dataset.n);
+    const vp1 = page.getViewport({scale: 1});
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+    const vp = page.getViewport({scale: el.clientWidth / vp1.width * ratio});
+    const cv = document.createElement('canvas');
+    cv.width = Math.floor(vp.width); cv.height = Math.floor(vp.height);
+    el.style.aspectRatio = `${vp1.width}/${vp1.height}`;
+    await page.render({canvasContext: cv.getContext('2d'), viewport: vp}).promise;
+    el.replaceChildren(cv);
+  };
+  const obs = new IntersectionObserver(entries => entries.forEach(e => {
+    if(!e.isIntersecting) return;
+    obs.unobserve(e.target);
+    draw(e.target).catch(() => { e.target.textContent = 'Страница не открылась'; });
+  }), {root: body, rootMargin: '600px 0px'});
+  pdfView = {doc, obs};
+  body.querySelectorAll('.pdf-page').forEach(el => obs.observe(el));
+}
 async function openViewer(f){
   const kind = viewKind(f);
-  if(kind === 'pdf'){
-    const w = window.open('', '_blank');
-    try { const url = await fileUrl(f); if(w) w.location.href = url; else location.href = url; }
-    catch(e){ if(w) w.close(); toast(errText(e)); }
-    return;
-  }
+  closePdf();
   viewing = f;
   $('#v-title').textContent = f.name;
   const body = $('#v-body');
   body.innerHTML = '<div class="v-msg">Открываю файл…</div>';
   if(!viewer.open) viewer.showModal();
   try{
+    if(kind === 'pdf'){ await showPdf(f, body); return; }
     if(kind === 'img'){ const url = await fileUrl(f); if(viewing === f) body.innerHTML = `<img class="v-img" src="${esc(url)}" alt="${esc(f.name)}">`; return; }
     if(kind === 'text'){ const t = await (await getBlob(f)).text(); if(viewing === f) body.innerHTML = `<pre class="v-text">${esc(t)}</pre>`; return; }
     if(kind === 'docx'){

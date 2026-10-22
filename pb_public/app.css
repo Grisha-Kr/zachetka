@@ -340,3 +340,8 @@ input[type=email],input[type=password],input[type=number]{background:var(--surfa
 .update-bar{max-width:1040px;margin:12px auto 0;padding-inline:16px}
 .update-bar > div{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:color-mix(in srgb,var(--accent) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));border-radius:10px;padding:8px 8px 8px 14px}
 .update-bar span{flex:1;min-width:160px}
+
+/* Просмотр PDF */
+.v-body.is-pdf{background:var(--surface-2);padding:12px;display:grid;gap:12px;align-content:start;justify-items:center}
+.pdf-page{width:100%;max-width:820px;background:#fff;box-shadow:0 1px 3px rgb(0 0 0 / .2);display:grid;place-items:center;color:#9aa5af;font-size:13px}
+.pdf-page canvas{display:block;width:100%;height:auto}
