@@ -17,6 +17,7 @@ const MB = 1024*1024;
 const MAX_FILE = 20*MB;
 const PBN = {inst:'institutions', subjects:'subjects', tasks:'tasks', sessions:'sessions', theses:'theses', stages:'stages', notes:'notes', att:'attachments'};
 const KEYS = Object.keys(PBN);
+let stMenu = null; // открытый список статусов
 const SOON_DAYS = 31; // сколько дней вперёд показывать сроки на главной
 
 /* ---------- Состояние ---------- */
@@ -65,6 +66,12 @@ function fmt(iso, wd){
   const [y,m,d] = iso.split('-').map(Number);
   const dt = new Date(y, m-1, d);
   return (wd ? WD[dt.getDay()]+', ' : '') + d + ' ' + MON[m-1] + (y !== new Date().getFullYear() ? ' ' + y : '');
+}
+// Дата цифрами: 10.11. (год добавляется, если он не текущий)
+function fmtNum(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-').map(Number);
+  return d + '.' + pad(m) + '.' + (y !== new Date().getFullYear() ? y : '');
 }
 const plural = (n, f) => { n = Math.abs(n) % 100; const n1 = n % 10; if(n > 10 && n < 20) return f[2]; if(n1 > 1 && n1 < 5) return f[1]; if(n1 === 1) return f[0]; return f[2]; };
 const DAYS = ['день','дня','дней'];
@@ -161,13 +168,14 @@ function render(){
   const m = $('#main');
   if(!S.loaded){ m.innerHTML = '<div class="loading">Загружаю данные…</div>'; return; }
   const views = {home:vHome, subjects:vSubjects, tasks:vTasks, sessions:vSessions, thesis:vThesis, account:vAccount};
+  closeStatusMenu();
   m.innerHTML = (views[UI.tab] || vHome)();
   if(cur && cur.refresh) cur.refresh();
 }
 
 function chip(colName, id, status){
   const s = STATUS[status] || STATUS.todo;
-  return `<button class="chip ${s.c}" data-act="cycle" data-col="${colName}" data-id="${esc(id)}" title="Нажмите, чтобы сменить статус">${s.l}</button>`;
+  return `<button class="chip ${s.c}" data-act="status" data-col="${colName}" data-id="${esc(id)}" aria-haspopup="menu" title="Нажмите, чтобы выбрать статус">${s.l}</button>`;
 }
 function dueHTML(t){
   if(!t.due) return '<span class="muted">без срока</span>';
@@ -333,12 +341,12 @@ function vTasks(){
       <label>Статус<select id="f-st" data-filter="st">${stOpts}</select></label>
     </div>
     ${list.length ? taskList(list) : `<div class="empty">${S.tasks.length ? 'Под эти фильтры заданий нет.' : 'Заданий пока нет. Запишите первое, что вам задали.'}</div>`}
-    <p class="hint" style="margin-top:10px">Статус меняется нажатием на цветную метку: не начинал → приступил → заканчиваю → сделал.</p>`;
+    <p class="hint" style="margin-top:10px">Чтобы сменить статус, нажмите на цветную метку и выберите нужный из списка.</p>`;
 }
 
 /* ---------- Сессии ---------- */
 const examSort = (a,b) => (a.date || '9999') < (b.date || '9999') ? -1 : (a.date || '9999') > (b.date || '9999') ? 1 : (a.time || '') < (b.time || '') ? -1 : 1;
-const sessRange = s => s.start ? `с ${fmt(s.start)}${s.end ? ' по ' + fmt(s.end) : ''}` : 'даты не указаны';
+const sessRange = s => s.start ? `с ${fmtNum(s.start)}${s.end ? ' по ' + fmtNum(s.end) : ''}` : 'даты не указаны';
 function vSessions(){
   const t = todayISO();
   const all = [...S.sessions].sort((a,b) => (a.start || '') < (b.start || '') ? -1 : 1);
@@ -836,15 +844,51 @@ function openAtt(id){
 }
 
 /* ---------- Действия ---------- */
-async function cycle(colName, id){
+// Выпадающий список статусов у цветной метки
+function closeStatusMenu(){ if(stMenu){ stMenu.el.remove(); stMenu.btn.setAttribute('aria-expanded', 'false'); stMenu = null; } }
+function openStatusMenu(btn){
+  const {col: colName, id} = btn.dataset;
   const item = byId(colName, id); if(!item) return;
-  const next = ORDER[(ORDER.indexOf(item.status || 'todo') + 1) % ORDER.length];
-  try { await col(colName).doc(id).update({status: next}); toast(STATUS[next].l); }
+  const cur = item.status || 'todo';
+  const el = document.createElement('div');
+  el.className = 'st-menu'; el.setAttribute('role', 'menu');
+  el.innerHTML = ORDER.map(k => `<button type="button" role="menuitemradio" aria-checked="${k === cur}" class="${STATUS[k].c}" data-st="${k}"><i></i>${STATUS[k].l}</button>`).join('');
+  document.body.appendChild(el);
+  const r = btn.getBoundingClientRect(), h = el.offsetHeight, w = el.offsetWidth;
+  const top = r.bottom + 4 + h > window.innerHeight - 8 ? r.top - h - 4 : r.bottom + 4;
+  el.style.top = Math.max(8, top) + 'px';
+  el.style.left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) + 'px';
+  btn.setAttribute('aria-expanded', 'true');
+  stMenu = {el, btn, colName, id};
+  el.querySelector('[aria-checked="true"]').focus();
+}
+async function setStatus(colName, id, st){
+  const item = byId(colName, id); if(!item || (item.status || 'todo') === st) return;
+  try { await col(colName).doc(id).update({status: st}); toast(STATUS[st].l); }
   catch(e){ toast(errText(e)); }
 }
+window.addEventListener('resize', closeStatusMenu);
+window.addEventListener('scroll', closeStatusMenu, true);
+document.addEventListener('keydown', e => {
+  if(!stMenu) return;
+  if(e.key === 'Escape'){ const b = stMenu.btn; closeStatusMenu(); b.focus(); return; }
+  if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+    const items = [...stMenu.el.querySelectorAll('[data-st]')];
+    const i = items.indexOf(document.activeElement);
+    items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus();
+    e.preventDefault();
+  }
+});
 function go(tab){ UI.tab = tab; UI.subjectId = null; saveLS('tab', tab); render(); window.scrollTo(0, 0); if(tab === 'account') loadInvites(); }
 
 document.addEventListener('click', async e => {
+  if(stMenu){
+    const opt = e.target.closest('.st-menu [data-st]');
+    const {colName, id, btn} = stMenu;
+    if(opt || !e.target.closest('.st-menu')) closeStatusMenu();
+    if(opt){ setStatus(colName, id, opt.dataset.st); return; }
+    if(e.target.closest('.st-menu') || e.target.closest('[data-act="status"]') === btn) return;
+  }
   if(e.target.closest('#theme-btn')){
     setTheme(isDark() ? 'light' : 'dark');
     if(UI.tab === 'account' && S.loaded) render();
@@ -858,7 +902,7 @@ document.addEventListener('click', async e => {
   if(!a || !S.loaded) return;
   const d = a.dataset;
   switch(d.act){
-    case 'cycle': cycle(d.col, d.id); break;
+    case 'status': openStatusMenu(a); break;
     case 'task': openTask(d.id); break;
     case 'new-task': openTask(null, d.subject); break;
     case 'new-inst': openInst(); break;
