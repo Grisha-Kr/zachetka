@@ -34,9 +34,13 @@ onRecordCreateRequest((e) => {
       throw new BadRequestError("Срок действия приглашения истёк.");
     }
     e.record.set("role", "user");
+    // срок доступа задаёт приглашение, а не сам пользователь
+    e.record.set("access_until", require(`${__hooks}/access_lib.js`).untilFor(invite.getString("access_period")));
   } else {
     e.record.set("role", "admin");
+    e.record.set("access_until", "");
   }
+  e.record.set("suspended", false);
 
   e.next();
 

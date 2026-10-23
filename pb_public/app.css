@@ -55,7 +55,7 @@ p{margin:0}
 .top{position:sticky;top:0;padding-top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
 .top-in{max-width:1040px;margin:0 auto;padding-inline:16px;padding-block:10px;display:flex;align-items:center;gap:16px}
 .brand{display:flex;align-items:baseline;gap:10px;min-width:0}
-.brand h1{font-size:20px}
+.brand h1{font-size:20px;white-space:nowrap}
 .brand .today{font-size:13px;color:var(--muted);white-space:nowrap}
 .grow{flex:1}
 .tabs{display:flex;gap:2px}
@@ -351,3 +351,40 @@ input[type=email],input[type=password],input[type=number]{background:var(--surfa
 .ai-url input{font-family:var(--f-mono);font-size:14px}
 .ai-steps{margin:0;padding-left:20px;display:grid;gap:8px;line-height:1.5}
 .ai-sub{display:block;margin-bottom:4px}
+
+/* Пользователь в шапке */
+.me-btn{appearance:none;border:0;background:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;padding:3px 10px 3px 3px;border-radius:99px;color:var(--fg);font-weight:500;max-width:180px}
+.me-btn:hover,.me-btn[aria-current="page"]{background:var(--surface-2)}
+.me-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ava{width:30px;height:30px;border-radius:50%;flex:none;display:inline-grid;place-items:center;overflow:hidden;background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:14px}
+.ava img{width:100%;height:100%;object-fit:cover;display:block}
+.ava.lg{width:72px;height:72px;font-size:28px}
+.ava-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+@media (max-width:760px){ .me-name{display:none} .me-btn{padding:3px} }
+
+/* Плашка о сроке доступа */
+.access-bar{max-width:1040px;margin:12px auto 0;padding-inline:16px}
+.access-bar > div{background:color-mix(in srgb,var(--st-finish) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--st-finish) 35%,var(--line));border-radius:10px;padding:10px 14px;line-height:1.5}
+.access-bar.off > div{background:color-mix(in srgb,var(--danger) 10%,var(--surface));border-color:color-mix(in srgb,var(--danger) 35%,var(--line))}
+.access-bar a{color:var(--accent)}
+
+/* Пользователи (для администратора) */
+.users{display:grid}
+.usr{display:grid;gap:10px;padding:14px 0;border-top:1px solid var(--line)}
+.usr:first-child{border-top:0;padding-top:4px}
+.usr-head{display:flex;gap:12px;align-items:flex-start}
+.usr-head .ava{width:40px;height:40px;font-size:17px}
+.usr-main{display:grid;gap:3px;min-width:0}
+.usr-main .muted{font-size:13px;overflow-wrap:anywhere}
+.usr-more summary{cursor:pointer;color:var(--accent);font-size:14px;font-weight:500}
+.usr-more[open]{display:grid;gap:10px}
+.usr-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.usr-row .fld{flex:1;min-width:180px}
+.usr-log{margin:0;padding-left:18px;display:grid;gap:4px;font-size:13px}
+.tag.bad{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger);font-weight:600}
+.tag.warn{background:color-mix(in srgb,var(--st-finish) 16%,transparent);color:var(--st-finish);font-weight:600}
+@media (max-width:1100px) and (min-width:761px){ .brand .today{display:none} }
+@media (max-width:960px) and (min-width:761px){
+  .me-name{display:none} .me-btn{padding:3px}
+  .top-in{gap:10px} .tab{padding:8px 7px}
+}

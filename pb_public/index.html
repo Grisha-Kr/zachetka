@@ -14,7 +14,7 @@
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-<link rel="stylesheet" href="/app.css?v=9">
+<link rel="stylesheet" href="/app.css?v=10">
 <script>try{var t=JSON.parse(localStorage.getItem('zach_theme')||'""');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
 </head>
 <body>
@@ -39,10 +39,11 @@
       <button class="tab" data-tab="thesis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>Диплом</button>
     </nav>
     <button class="icon-btn" id="theme-btn" type="button" title="Тёмная тема" aria-label="Тёмная тема"></button>
-    <button class="icon-btn" data-tab="account" title="Профиль и настройки" aria-label="Профиль и настройки"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></button>
+    <button class="me-btn" id="me-btn" data-tab="account" title="Профиль и настройки" aria-label="Профиль и настройки"><span class="ava" id="me-ava"></span><span class="me-name" id="me-name"></span></button>
   </div>
 </header>
 <div class="update-bar" id="update-bar" hidden><div><span>Вышло обновление приложения.</span><button type="button" class="btn sm primary" id="update-btn">Обновить</button><button type="button" class="icon-btn" id="update-close" aria-label="Скрыть">×</button></div></div>
+<div class="access-bar" id="access-bar" hidden><div id="access-text"></div></div>
 <div class="notice" id="notice" hidden><div id="notice-text"></div></div>
 <main id="main"><div class="loading">Загружаю данные…</div></main>
 </div>
@@ -52,6 +53,6 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="/vendor/pocketbase.umd.js"></script>
-<script src="/app.js?v=8"></script>
+<script src="/app.js?v=9"></script>
 </body>
 </html>

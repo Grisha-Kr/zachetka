@@ -1,7 +1,7 @@
 // Сервис-воркер: хранит оболочку приложения, чтобы оно быстро открывалось.
 // Данные (/api/) никогда не кэшируются.
-const VERSION = 'zachetka-v9';
-const SHELL = ['/', '/index.html', '/app.css?v=9', '/app.js?v=8', '/vendor/pocketbase.umd.js', '/manifest.webmanifest', '/icons/icon-192.png'];
+const VERSION = 'zachetka-v10';
+const SHELL = ['/', '/index.html', '/app.css?v=10', '/app.js?v=9', '/vendor/pocketbase.umd.js', '/manifest.webmanifest', '/icons/icon-192.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

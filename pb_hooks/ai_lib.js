@@ -341,6 +341,11 @@ function rpc(ctx, msg) {
       const p = msg.params || {};
       const tool = TOOLS.find((t) => t.name === p.name);
       if (!tool) return fail(-32602, "Unknown tool: " + p.name);
+      // при приостановленном доступе нейросеть может только смотреть
+      const access = require(`${__hooks}/access_lib.js`);
+      if (!tool.annotations.readOnlyHint && !access.state(ctx.user).active) {
+        return ok({ content: [{ type: "text", text: access.message() }], isError: true });
+      }
       try {
         const data = tool.run(ctx, p.arguments || {});
         return ok({ content: [{ type: "text", text: typeof data === "string" ? data : JSON.stringify(data, null, 1) }] });
@@ -494,6 +499,10 @@ const TOOLS = [
         upcoming_sessions: sessions.slice(0, 3).map((s) => sessionOut(s, insts, subs)),
         theses: theses.map((th) => ({ id: th.id, institution: insts[g(th, "instId")] || "", topic: g(th, "topic"), submit: g(th, "submit"), defense: g(th, "defense") })),
         counts: { institutions: Object.keys(insts).length, subjects: Object.keys(subs).length, open_tasks: tasks.length },
+        access: (() => {
+          const st = require(`${__hooks}/access_lib.js`).state(ctx.user);
+          return { active: st.active, until: st.until || "бессрочно", note: st.active ? "" : "Доступ приостановлен: можно только смотреть записи." };
+        })(),
       };
     },
   },

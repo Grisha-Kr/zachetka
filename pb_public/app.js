@@ -21,7 +21,7 @@ let stMenu = null; // открытый список статусов
 const SOON_DAYS = 31; // сколько дней вперёд показывать сроки на главной
 
 /* ---------- Состояние ---------- */
-const S = {inst:[], subjects:[], tasks:[], sessions:[], theses:[], stages:[], notes:[], att:[], invites:[], aiGrants:[], loaded:false};
+const S = {inst:[], subjects:[], tasks:[], sessions:[], theses:[], stages:[], notes:[], att:[], invites:[], aiGrants:[], access:null, adminUsers:null, loaded:false};
 const loadLS = (k, d) => { try { const v = localStorage.getItem('zach_'+k); return v == null ? d : JSON.parse(v); } catch(e){ return d; } };
 const saveLS = (k, v) => { try { localStorage.setItem('zach_'+k, JSON.stringify(v)); } catch(e){} };
 /* ---------- Тема оформления: auto (как в системе), light, dark ---------- */
@@ -128,6 +128,8 @@ async function loadAll(keys = KEYS){
 let subscribed = false;
 async function subscribeAll(){
   if(subscribed) return; subscribed = true;
+  // администратор продлил доступ или изменилось имя с другого устройства
+  await pb.collection('users').subscribe(me().id, e => { if(e.action === 'update'){ pb.authStore.save(pb.authStore.token, e.record); renderMe(); loadAccess(); } });
   for(const k of KEYS){
     await pb.collection(PBN[k]).subscribe('*', e => { if(e.action === 'delete') removeLocal(k, e.record.id); else upsert(k, e.record); });
   }
@@ -146,6 +148,7 @@ async function boot(){
 }
 async function startApp(){
   $('#auth').hidden = true; $('#app').hidden = false;
+  renderMe(); loadAccess();
   render();
   try {
     await loadAll();
@@ -159,8 +162,68 @@ async function startApp(){
 document.addEventListener('visibilitychange', () => {
   if(document.visibilityState !== 'visible') return;
   checkUpdate();
-  if(S.loaded && pb.authStore.isValid) loadAll().catch(() => {});
+  if(S.loaded && pb.authStore.isValid){ loadAll().catch(() => {}); loadAccess(); }
 });
+
+/* ---------- Пользователь в шапке и доступ ---------- */
+const initial = u => (String(u.name || u.email || '?').trim()[0] || '?').toUpperCase();
+function avatarHTML(u){
+  return u.avatar ? `<img src="${esc(pb.files.getURL(u, u.avatar, {thumb: '96x96'}))}" alt="">` : `<span>${esc(initial(u))}</span>`;
+}
+function renderMe(){
+  const u = me();
+  $('#me-ava').innerHTML = avatarHTML(u);
+  $('#me-name').textContent = String(u.name || '').trim().split(/\s+/)[0] || String(u.email || '').split('@')[0];
+}
+const fmtFull = iso => iso ? iso.split('-').reverse().join('.') : '';
+const contactHTML = c => /^[^\s@]+@[^\s@]+$/.test(c || '') ? `<a href="mailto:${esc(c)}">${esc(c)}</a>` : esc(c || 'администратору');
+const readOnly = () => !!(S.access && !S.access.active);
+const RO_MSG = 'Доступ приостановлен: добавлять и менять записи сейчас нельзя.';
+async function loadAccess(){
+  try { S.access = await pb.send('/api/zachetka/access', {}); } catch(e){ return; }
+  renderAccessBar();
+  if(UI.tab === 'account' && S.loaded) render();
+}
+function renderAccessBar(){
+  const a = S.access, bar = $('#access-bar');
+  let html = '';
+  if(a && !a.active){
+    html = `<b>Доступ приостановлен${a.reason === 'expired' ? ` (срок закончился ${fmtFull(a.until)})` : ''}.</b> Ваши записи и файлы сохранены: их можно смотреть и скачивать, а добавлять и менять нельзя. Чтобы продлить доступ, напишите: ${contactHTML(a.contact)}.`;
+    bar.classList.add('off');
+  } else if(a && a.until && !a.admin && dnum(a.until) - dnum(a.today) <= 7){
+    const k = Math.round(dnum(a.until) - dnum(a.today));
+    html = `Доступ действует до ${fmtFull(a.until)}${k === 0 ? ' (последний день)' : ` (осталось ${k} ${plural(k, DAYS)})`}. Чтобы продлить, напишите: ${contactHTML(a.contact)}.`;
+    bar.classList.remove('off');
+  }
+  $('#access-text').innerHTML = html;
+  bar.hidden = !html;
+}
+function accessLine(){
+  const a = S.access;
+  if(!a) return '';
+  if(a.admin) return 'Вы администратор, доступ бессрочный.';
+  if(!a.active) return `Доступ приостановлен${a.reason === 'expired' ? ` (срок закончился ${fmtFull(a.until)})` : ''}. Чтобы продлить, напишите: ${contactHTML(a.contact)}.`;
+  return a.until ? `Доступ действует до ${fmtFull(a.until)} включительно.` : 'Доступ бессрочный.';
+}
+// Фото уменьшаем до квадрата 256×256 прямо в браузере
+async function squareJpeg(file, size){
+  let img;
+  try { img = await createImageBitmap(file); }
+  catch(e){
+    img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(file); });
+  }
+  const w = img.width, h = img.height, side = Math.min(w, h);
+  const cv = document.createElement('canvas'); cv.width = cv.height = size;
+  cv.getContext('2d').drawImage(img, (w - side) / 2, (h - side) / 2, side, side, 0, 0, size, size);
+  return await new Promise(res => cv.toBlob(res, 'image/jpeg', 0.88));
+}
+async function uploadAvatar(file){
+  let blob;
+  try { blob = await squareJpeg(file, 256); } catch(e){ toast('Не удалось открыть картинку. Выберите фото в формате JPG или PNG.'); return; }
+  const fd = new FormData(); fd.append('avatar', new File([blob], 'avatar.jpg', {type: 'image/jpeg'}));
+  try { const rec = await pb.collection('users').update(me().id, fd); pb.authStore.save(pb.authStore.token, rec); renderMe(); render(); toast('Фото сохранено'); }
+  catch(e){ toast(errText(e)); }
+}
 
 /* ---------- Проверка новой версии ---------- */
 // Сравниваем ?v= у app.js и app.css в открытой странице и в свежем index.html с сервера
@@ -967,6 +1030,7 @@ document.addEventListener('click', async e => {
   const a = e.target.closest('#main [data-act]');
   if(!a || !S.loaded) return;
   const d = a.dataset;
+  if(readOnly() && (/^new-/.test(d.act) || d.act === 'status' || d.act === 'add-note')){ toast(RO_MSG); return; }
   switch(d.act){
     case 'status': openStatusMenu(a); break;
     case 'task': openTask(d.id); break;
@@ -1011,6 +1075,8 @@ document.addEventListener('click', async e => {
 document.addEventListener('change', async e => {
   const t = e.target;
   if(t.name === 'p-theme'){ setTheme(t.value); return; }
+  if(t.id === 'p-ava'){ const f = t.files[0]; t.value = ''; if(f) uploadAvatar(f); return; }
+  if(readOnly() && ['sf-input', 'tf-input', 'imp-file'].includes(t.id)){ t.value = ''; toast(RO_MSG); return; }
   if(t.name === 'p-ai'){ UI.aiPick = t.value; saveLS('ai', t.value); $('#ai-steps').innerHTML = aiSteps(t.value); return; }
   if(t.matches('[data-filter]')){ UI.f[t.dataset.filter] = t.value; if(t.dataset.filter === 'inst') UI.f.subj = ''; saveLS('filters', UI.f); render(); return; }
   if(t.id === 'n-chf'){ UI.ch = t.value; $('#notes-list').innerHTML = notesList(); return; }
@@ -1127,10 +1193,12 @@ function vAccount(){
   return `<div class="page-head"><h2>Профиль</h2></div>
   <div class="acc">
     <section class="card"><h3>Аккаунт</h3>
+      <div class="ava-row"><span class="ava lg">${avatarHTML(u)}</span><div class="actions"><span class="upload"><input type="file" id="p-ava" accept="image/*"><label class="btn sm" for="p-ava">${u.avatar ? 'Сменить фото' : 'Загрузить фото'}</label></span>${u.avatar ? '<button class="btn sm ghost" data-act="del-ava">Убрать фото</button>' : ''}</div></div>
       <div class="row2"><label class="fld"><span>Имя</span><input type="text" id="p-name" value="${esc(u.name || '')}"></label>
       <label class="fld"><span>Почта</span><input type="email" value="${esc(u.email || '')}" disabled></label></div>
       <div class="actions"><button class="btn" data-act="save-name">Сохранить имя</button></div>
       <p class="hint">Файлы занимают ${fsize(used || 1)}.</p>
+      ${S.access ? `<p class="${S.access.active ? 'hint' : 'form-err'}">${accessLine()}</p>` : ''}
     </section>
     <section class="card"><h3>Оформление</h3>
       <div class="seg" role="radiogroup" aria-label="Тема">${[['auto','Как в системе'],['light','Светлая'],['dark','Тёмная']].map(([k,l]) =>
@@ -1155,16 +1223,17 @@ function vAccount(){
       <p class="muted">Новый человек может зарегистрироваться только по коду. Отправьте ему ссылку или код.</p>
       <div class="row2"><label class="fld"><span>Для кого (заметка)</span><input type="text" id="i-note" placeholder="Например: Иван, группа 3"></label>
       <label class="fld"><span>Сколько регистраций</span><select id="i-max"><option value="1">1 человек</option><option value="5">до 5 человек</option><option value="30">до 30 человек</option><option value="0">без ограничения</option></select></label></div>
-      <div class="row2"><label class="fld"><span>Действует до (необязательно)</span><input type="date" id="i-exp"></label><span></span></div>
+      <div class="row2"><label class="fld"><span>Приглашение действует до (необязательно)</span><input type="date" id="i-exp"></label>
+      <label class="fld"><span>Срок доступа для новых пользователей</span><select id="i-period">${Object.entries(PERIODS).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></label></div>
       <div class="actions"><button class="btn primary" data-act="new-invite">Создать приглашение</button></div>
       <div>${inv.length ? inv.map(i => {
           const left = i.max_uses > 0 ? `${i.uses} из ${i.max_uses}` : `${i.uses}, без ограничения`;
-          const exp = i.expires ? ` · до ${fmt(i.expires)}` : '';
+          const exp = (i.expires ? ` · до ${fmt(i.expires)}` : '') + (i.access_period ? ` · доступ ${PERIODS[i.access_period] || i.access_period}` : '');
           return `<div class="inv"><div><code>${esc(i.code)}</code><div class="muted">${i.note ? esc(i.note) + ' · ' : ''}использовано ${left}${exp}</div></div>
             <div class="acts"><button class="btn sm ghost" data-act="copy-invite" data-code="${esc(i.code)}">Скопировать ссылку</button><button class="btn sm ghost danger" data-act="del-invite" data-id="${esc(i.id)}">Удалить</button></div></div>`;
         }).join('') : '<p class="hint">Приглашений пока нет.</p>'}</div>
-      <p class="hint">Пользователями управляют в панели администратора: <a href="/_/" target="_blank" rel="noopener">${esc(location.host)}/_/</a></p>
-    </section>` : ''}
+    </section>
+    ${usersSection()}` : ''}
     <section class="card"><h3>Выход</h3>
       <div class="actions"><button class="btn" data-act="logout">Выйти из аккаунта</button><a class="btn ghost" href="/privacy.html" target="_blank" rel="noopener">Политика конфиденциальности</a></div>
       <div class="actions"><button class="btn ghost danger" data-act="delete-account">Удалить аккаунт и все данные</button></div>
@@ -1217,7 +1286,49 @@ function aiSection(){
 async function loadAiGrants(){
   try { S.aiGrants = await pb.collection('ai_grants').getFullList(); if(UI.tab === 'account') render(); } catch(e){}
 }
-function loadAccount(){ loadInvites(); loadAiGrants(); }
+function loadAccount(){ loadInvites(); loadAiGrants(); loadAdminUsers(); }
+
+/* ---------- Пользователи (для администратора) ---------- */
+const PERIODS = {'': 'бессрочно', '7d': '7 дней', '14d': '14 дней', '1m': '1 месяц', '3m': '3 месяца'};
+const ACC_DONE = {extend: 'Доступ продлён', set: 'Дата доступа изменена', unlimited: 'Доступ бессрочный', suspend: 'Доступ приостановлен', resume: 'Доступ возобновлён', note: 'Заметка сохранена'};
+const ACC_LOG = {'extend:1': 'продлён на 1 месяц', 'extend:3': 'продлён на 3 месяца', set: 'дата изменена', unlimited: 'сделан бессрочным', suspend: 'приостановлен', resume: 'возобновлён', note: 'заметка'};
+async function loadAdminUsers(){
+  if(!isAdmin()) return;
+  try { S.adminUsers = await pb.send('/api/zachetka/admin/users', {}); if(UI.tab === 'account') render(); } catch(e){}
+}
+function userState(x, today){
+  if(x.role === 'admin') return '<span class="tag">администратор</span>';
+  if(x.suspended) return '<span class="tag bad">приостановлен</span>';
+  if(x.access_until && x.access_until < today) return `<span class="tag bad">срок закончился ${fmtFull(x.access_until)}</span>`;
+  if(!x.access_until) return '<span class="tag ok">бессрочно</span>';
+  const k = Math.round(dnum(x.access_until) - dnum(today));
+  return `<span class="tag${k <= 7 ? ' warn' : ' ok'}">до ${fmtFull(x.access_until)}${k <= 7 ? `, осталось ${k} ${plural(k, DAYS)}` : ''}</span>`;
+}
+function usersSection(){
+  const data = S.adminUsers;
+  if(!data) return '<section class="card"><h3>Пользователи</h3><p class="hint">Загружаю…</p></section>';
+  const t = data.today;
+  const rank = x => x.role === 'admin' ? 3 : !x.active ? 0 : x.access_until ? 1 : 2;
+  const list = data.users.slice().sort((a, b) => rank(a) - rank(b) || (a.access_until || '').localeCompare(b.access_until || '') || String(a.name || a.email).localeCompare(String(b.name || b.email)));
+  return `<section class="card"><h3>Пользователи <span class="count">${list.length}</span></h3>
+    <p class="muted">Когда срок доступа заканчивается или вы ставите паузу, человек может только смотреть и скачивать свои записи. Данные сохраняются, после продления всё работает как раньше. Продление считается от даты окончания, если она ещё не прошла, иначе от сегодня.</p>
+    <div class="users">${list.map(x => {
+      const id = esc(x.id), adm = x.role === 'admin';
+      const log = x.log.map(l => `<li><span class="mono">${fmtFull(String(l.created).slice(0, 10))}</span> ${esc(ACC_LOG[l.action] || l.action)}${l.until_before !== l.until_after ? `: ${l.until_before ? fmtFull(l.until_before) : 'бессрочно'} → ${l.until_after ? fmtFull(l.until_after) : 'бессрочно'}` : ''}${l.note ? ` · ${esc(l.note)}` : ''}${l.by ? ` <span class="muted">(${esc(l.by)})</span>` : ''}</li>`).join('');
+      return `<div class="usr">
+        <div class="usr-head"><span class="ava">${avatarHTML(x.avatar ? {...x, collectionName: 'users'} : x)}</span>
+          <div class="usr-main"><b>${esc(x.name || x.email)}</b><span class="muted">${x.name ? esc(x.email) + ' · ' : ''}с ${fmtFull(String(x.created).slice(0, 10))} · файлы ${fsize(x.files_size || 1)}</span><span>${userState(x, t)}</span></div></div>
+        ${adm ? '' : `<div class="actions"><button class="btn sm" data-act="acc" data-action="extend" data-months="1" data-id="${id}">+1 месяц</button><button class="btn sm" data-act="acc" data-action="extend" data-months="3" data-id="${id}">+3 месяца</button>${x.suspended ? `<button class="btn sm" data-act="acc" data-action="resume" data-id="${id}">Возобновить</button>` : `<button class="btn sm ghost danger" data-act="acc" data-action="suspend" data-id="${id}">Приостановить</button>`}</div>`}
+        <details class="usr-more"${UI.openUser === x.id ? ' open' : ''}><summary>${adm ? 'Заметки' : 'Дата, заметка и история'}</summary>
+          ${adm ? '' : `<div class="usr-row"><label class="fld"><span>Доступ до</span><input type="date" id="ud-${id}" value="${esc(x.access_until || '')}"></label><button class="btn sm" data-act="acc" data-action="set" data-id="${id}">Поставить дату</button><button class="btn sm ghost" data-act="acc" data-action="unlimited" data-id="${id}">Бессрочно</button></div>`}
+          <div class="usr-row"><label class="fld"><span>Заметка (видите только вы; добавится и к продлению)</span><input type="text" id="un-${id}" placeholder="Например: оплатил 500 ₽ 01.11 переводом"></label><button class="btn sm ghost" data-act="acc" data-action="note" data-id="${id}">Сохранить заметку</button></div>
+          ${log ? `<ul class="usr-log">${log}</ul>` : '<p class="hint">Истории пока нет.</p>'}
+        </details>
+      </div>`;
+    }).join('')}</div>
+    <p class="hint">Удалить пользователя совсем можно в панели администратора: <a href="/_/" target="_blank" rel="noopener">${esc(location.host)}/_/</a></p>
+  </section>`;
+}
 async function loadInvites(){
   if(!isAdmin()) return;
   try { S.invites = await pb.collection('invites').getFullList(); if(UI.tab === 'account') render(); } catch(e){}
@@ -1233,7 +1344,19 @@ async function accountAction(a, d){
     switch(d.act){
       case 'save-name': {
         const rec = await pb.collection('users').update(me().id, {name: $('#p-name').value.trim()});
-        pb.authStore.save(pb.authStore.token, rec); toast('Имя сохранено'); break;
+        pb.authStore.save(pb.authStore.token, rec); renderMe(); toast('Имя сохранено'); break;
+      }
+      case 'del-ava': {
+        const rec = await pb.collection('users').update(me().id, {avatar: null});
+        pb.authStore.save(pb.authStore.token, rec); renderMe(); render(); toast('Фото убрано'); break;
+      }
+      case 'acc': {
+        const note = ($('#un-' + d.id) || {}).value || '';
+        if(d.action === 'suspend' && !arm(a, 'Точно приостановить?')) return;
+        if(d.action === 'set' && !($('#ud-' + d.id) || {}).value){ toast('Выберите дату.'); return; }
+        await pb.send('/api/zachetka/admin/access', {method: 'POST', body: {user: d.id, action: d.action, months: Number(d.months || 0), date: ($('#ud-' + d.id) || {}).value || '', note: note.trim()}});
+        UI.openUser = d.id;
+        await loadAdminUsers(); toast(ACC_DONE[d.action] || 'Сохранено'); break;
       }
       case 'save-pass': {
         const old = $('#p-old').value, n1 = $('#p-new').value, n2 = $('#p-new2').value;
@@ -1245,7 +1368,7 @@ async function accountAction(a, d){
         toast('Пароль изменён'); render(); break;
       }
       case 'new-invite': {
-        const body = {code: inviteCode(), note: $('#i-note').value.trim(), max_uses: Number($('#i-max').value), uses: 0, expires: $('#i-exp').value};
+        const body = {code: inviteCode(), note: $('#i-note').value.trim(), max_uses: Number($('#i-max').value), uses: 0, expires: $('#i-exp').value, access_period: $('#i-period').value};
         const rec = await pb.collection('invites').create(body);
         S.invites.push(rec); render();
         copyText(`${location.origin}/?invite=${rec.code}`);
