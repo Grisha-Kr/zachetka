@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Моя зачётка: гайд для новых пользователей</title>
+<style>
+  @font-face{font-family:Golos;font-weight:400;src:url(../../pb_public/fonts/golos-text-cyrillic-400-normal.woff2) format('woff2'),url(../../pb_public/fonts/golos-text-latin-400-normal.woff2) format('woff2')}
+  @font-face{font-family:Golos;font-weight:500;src:url(../../pb_public/fonts/golos-text-cyrillic-500-normal.woff2) format('woff2'),url(../../pb_public/fonts/golos-text-latin-500-normal.woff2) format('woff2')}
+  @font-face{font-family:Golos;font-weight:600;src:url(../../pb_public/fonts/golos-text-cyrillic-600-normal.woff2) format('woff2'),url(../../pb_public/fonts/golos-text-latin-600-normal.woff2) format('woff2')}
+  @font-face{font-family:Literata;font-weight:600;src:url(../../pb_public/fonts/literata-cyrillic-600-normal.woff2) format('woff2'),url(../../pb_public/fonts/literata-latin-600-normal.woff2) format('woff2')}
+  @page{size:A4;margin:16mm 16mm 18mm}
+  :root{--accent:#1c5a63;--soft:#e3f0f1;--fg:#16202a;--muted:#5a6774;--line:#d4dce1}
+  *{box-sizing:border-box}
+  body{font-family:Golos,sans-serif;color:var(--fg);font-size:10.5pt;line-height:1.5;margin:0}
+  h1,h2,h3{font-family:Literata,serif;font-weight:600;line-height:1.2;margin:0}
+  h2{font-size:18pt;margin:0 0 3mm;display:flex;align-items:baseline;gap:3mm}
+  h2 .n{font-family:Golos,sans-serif;font-size:10pt;color:#fff;background:var(--accent);border-radius:99px;padding:0.6mm 2.6mm;position:relative;top:-1mm}
+  h3{font-size:12pt;margin:4mm 0 1.5mm}
+  p{margin:0 0 2.5mm}
+  ol,ul{margin:0 0 3mm;padding-left:6mm}
+  li{margin-bottom:1.2mm}
+  b{font-weight:600}
+  .muted{color:var(--muted)}
+  section{break-before:page}
+  .cover{height:262mm;display:grid;grid-template-columns:1fr 62mm;gap:10mm;align-items:center}
+  .cover h1{font-size:34pt;margin-bottom:3mm}
+  .cover .sub{font-size:14pt;color:var(--muted);margin-bottom:10mm}
+  .cover .url{display:inline-block;font-size:13pt;font-weight:600;color:var(--accent);background:var(--soft);border-radius:3mm;padding:2.5mm 4mm;margin-bottom:10mm}
+  .toc{columns:2;column-gap:8mm;font-size:10pt;padding-left:5mm}
+  .toc li{break-inside:avoid}
+  .shot{display:block;width:100%;border:0.3mm solid var(--line);border-radius:2.5mm;box-shadow:0 0.6mm 2.5mm rgb(20 32 44 / .10);margin:2mm 0 1.5mm}
+  .phone{width:62mm;border-radius:5mm;border:0.8mm solid #2b343c}
+  .cap{font-size:9pt;color:var(--muted);margin:0 0 4mm}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:6mm;align-items:start}
+  .side{display:grid;grid-template-columns:1fr 70mm;gap:7mm;align-items:start}
+  .side.narrow{grid-template-columns:1fr 58mm}
+  .tip{background:var(--soft);border-radius:2.5mm;padding:3mm 4mm;margin:3mm 0;break-inside:avoid}
+  .tip b:first-child{color:var(--accent)}
+  .chips{display:flex;flex-wrap:wrap;gap:2mm;margin:1mm 0 3mm}
+  .chip{border-radius:99px;padding:0.6mm 3mm;font-size:9.5pt;font-weight:500;border:0.3mm solid}
+  .c1{color:#5f6b76;background:#eef1f3;border-color:#c9d0d6}
+  .c2{color:#2a64c4;background:#e6eefb;border-color:#a9c2ee}
+  .c3{color:#b06a08;background:#fbf0e1;border-color:#e8c38f}
+  .c4{color:#2d7a45;background:#e5f3ea;border-color:#a8d4b5}
+  .avoid{break-inside:avoid}
+  .foot{margin-top:6mm;padding-top:3mm;border-top:0.3mm solid var(--line);font-size:9pt;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div>
+    <h1>Моя зачётка</h1>
+    <p class="sub">Короткий гайд для новых пользователей</p>
+    <div class="url">zachetka.grishaweb.ru</div>
+    <p>Зачётка помогает держать учёбу в одном месте: предметы, задания со сроками, сессии с экзаменами, дипломную работу и файлы к ним. Она работает в браузере на компьютере и на телефоне, её можно установить на экран как обычное приложение.</p>
+    <p class="muted" style="margin-top:6mm">Что внутри:</p>
+    <ol class="toc">
+      <li>Регистрация и вход</li>
+      <li>Главная</li>
+      <li>Предметы</li>
+      <li>Задания</li>
+      <li>Файлы</li>
+      <li>Сессии</li>
+      <li>Диплом</li>
+      <li>Профиль и резервная копия</li>
+      <li>Приложение на телефоне</li>
+      <li>Нейросети</li>
+      <li>Доступ и вопросы</li>
+    </ol>
+  </div>
+  <img class="shot phone" src="shots/phone-home.png" alt="">
+</div>
+
+<section>
+  <h2><span class="n">1</span>Регистрация и вход</h2>
+  <div class="side narrow">
+    <div>
+      <p>Зарегистрироваться можно только по приглашению. Его вам пришлёт администратор: ссылку или код.</p>
+      <ol>
+        <li>Откройте ссылку из приглашения. Код подставится сам. Если у вас только код, откройте <b>zachetka.grishaweb.ru</b>, нажмите «Регистрация по приглашению» и введите его.</li>
+        <li>Укажите имя, почту и пароль не короче 8 символов.</li>
+        <li>Поставьте галочку согласия на обработку данных и нажмите «Создать аккаунт».</li>
+      </ol>
+      <p>В следующий раз входите по почте и паролю. Зачётка запоминает вход на устройстве, поэтому вводить пароль каждый раз не придётся.</p>
+      <div class="tip"><b>Ваши данные видите только вы.</b> Администратор и другие пользователи ваших предметов, заданий и файлов не видят.</div>
+    </div>
+    <div><img class="shot" src="shots/register.png" alt=""><p class="cap">Экран регистрации по ссылке-приглашению</p></div>
+  </div>
+
+</section>
+
+<section>
+  <h2><span class="n">2</span>Главная</h2>
+  <p>Главная показывает, что горит. Вверху четыре числа: сколько заданий просрочено, сколько сроков в ближайший месяц, сколько заданий в работе и сколько предметов уже сдано. Ниже идут списки: просроченное, сроки на месяц и задания в работе с далёким сроком. Справа ближайшая сессия с обратным отсчётом и ваш диплом.</p>
+  <img class="shot" src="shots/home.png" alt="">
+  <p class="cap">Главная: просроченное выделено красным, справа ближайшая сессия и диплом</p>
+</section>
+
+<section>
+  <h2><span class="n">3</span>Предметы</h2>
+  <p>С этого раздела стоит начать. Сначала добавьте учебное заведение («+ Заведение»): вуз, колледж или курсы. У каждого заведения свой цвет, по нему предметы и задания легко различать. Затем добавьте предметы («+ Предмет»): название, форму контроля, дату сдачи и преподавателя.</p>
+  <img class="shot" src="shots/subjects.png" alt="">
+  <p class="cap">Предметы по заведениям: сколько сдано и сколько заданий сделано</p>
+  <p>Нажмите на предмет, чтобы открыть его страницу. Там всё по предмету вместе: заметки, экзамены из расписания сессий, задания и файлы. Когда сдадите, нажмите «Редактировать», выберите статус «Сдал» и впишите оценку.</p>
+</section>
+
+<section>
+  <div class="side" style="grid-template-columns:1fr 1fr">
+    <div>
+      <h3 style="margin-top:0">Страница предмета</h3>
+      <ul>
+        <li><b>+ Задание</b> добавит задание сразу к этому предмету.</li>
+        <li><b>Редактировать</b> меняет данные предмета, там же его можно удалить.</li>
+        <li><b>Файлы</b>: кнопка «Прикрепить файл» со скрепкой. Сюда удобно складывать конспекты лекций и готовые домашние работы. Файлы, прикреплённые к заданиям этого предмета, тоже видны здесь.</li>
+      </ul>
+      <div class="tip"><b>Заметки к предмету</b> пишутся в окне «Редактировать». Например: как проходит экзамен, что просил преподаватель.</div>
+    </div>
+    <div><img class="shot" src="shots/subject.png" alt=""><p class="cap">Страница предмета с заданиями и файлами</p></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">4</span>Задания</h2>
+  <p>Раздел «Задания» собирает все задания по всем предметам. Фильтры вверху помогают оставить только одно заведение, один предмет или нужный статус, например только просроченные.</p>
+  <p>У каждого задания четыре статуса:</p>
+  <div class="chips"><span class="chip c1">Не начинал</span><span class="chip c2">Приступил</span><span class="chip c3">Заканчиваю</span><span class="chip c4">Сделал</span></div>
+  <p>Чтобы сменить статус, нажмите на цветную метку слева и выберите нужный из списка.</p>
+  <img class="shot" src="shots/tasks-status.png" alt="">
+  <p class="cap">Смена статуса: нажмите на метку и выберите из списка</p>
+</section>
+
+<section>
+  <div class="side" style="grid-template-columns:1fr 78mm">
+    <div>
+      <h3 style="margin-top:0">Как добавить задание</h3>
+      <ol>
+        <li>Нажмите «+ Задание» в разделе «Задания» или на странице предмета.</li>
+        <li>Напишите коротко, что задано, и выберите предмет.</li>
+        <li>В поле «Что задано» можно записать подробности.</li>
+        <li>Укажите дату выдачи и срок выполнения. Без срока задание не попадёт в «Сроки на месяц».</li>
+        <li>При желании сразу прикрепите файл: методичку, фото доски или готовую работу.</li>
+        <li>Нажмите «Сохранить».</li>
+      </ol>
+      <p>Чтобы открыть или изменить задание, нажмите на его название в любом списке. В том же окне его можно удалить.</p>
+      <div class="tip"><b>Просроченные задания</b> подсвечиваются красным и показывают, на сколько дней просрочен срок. Когда отметите задание как «Сделал», подсветка уйдёт.</div>
+    </div>
+    <div><img class="shot" src="shots/task-dialog.png" alt=""><p class="cap">Окно задания</p></div>
+  </div>
+
+</section>
+
+<section>
+  <h2><span class="n">5</span>Файлы</h2>
+  <p>Файлы можно прикреплять к заданию, к предмету и к диплому. Подходят PDF, Word, Excel, фото и многие другие форматы, каждый файл до 20 МБ. Всего на одного человека отводится 500 МБ.</p>
+  <ul>
+    <li><b>Открыть</b>: PDF, Word (.docx), фото и текстовые файлы открываются прямо в зачётке, в окне поверх страницы.</li>
+    <li><b>Скачать</b> сохраняет файл на устройство.</li>
+    <li><b>Подпись</b> позволяет коротко описать файл, например «Конспект лекции 3».</li>
+  </ul>
+  <img class="shot" src="shots/viewer.png" alt="">
+  <p class="cap">PDF открыт в окне просмотра. Кнопка «Скачать» вверху, крестик закрывает окно</p>
+
+</section>
+
+<section>
+  <h2><span class="n">6</span>Сессии</h2>
+  <p>Добавьте сессию («+ Сессия»): заведение, название и даты начала и конца. Затем внесите в неё экзамены, зачёты и консультации кнопкой «+ Экзамен или зачёт»: предмет, вид, дату, время и аудиторию.</p>
+  <p>Справа на карточке сессии виден обратный отсчёт: сколько дней до начала, а во время сессии сколько дней до конца. Прошедшие сессии убираются в отдельный список внизу страницы.</p>
+  <img class="shot" src="shots/sessions.png" alt="">
+  <p class="cap">Сессия с расписанием экзаменов</p>
+</section>
+
+<section>
+  <h2><span class="n">7</span>Диплом</h2>
+  <p>Если вы пишете дипломную или курсовую работу, заведите её в разделе «Диплом»: тема, научный руководитель, даты сдачи и защиты. Если работ несколько, у каждой будет своя вкладка.</p>
+  <ul>
+    <li><b>План по этапам</b>: введение, главы, предзащита. У этапа есть срок и такой же статус, как у заданий.</li>
+    <li><b>Файлы</b>: черновики, статьи, список литературы.</li>
+    <li><b>Мысли и идеи</b>: быстрые записи с привязкой к главе. Их можно искать по слову и фильтровать по главе.</li>
+  </ul>
+  <img class="shot" src="shots/thesis.png" alt="">
+  <p class="cap">Диплом: тема, сроки, план по этапам, файлы и записи</p>
+</section>
+
+<section>
+  <h2><span class="n">8</span>Профиль и резервная копия</h2>
+  <p>Профиль открывается кнопкой с вашим фото или первой буквой имени в правом верхнем углу.</p>
+  <div class="two">
+    <div>
+      <img class="shot" src="shots/profile-account.png" alt="">
+      <p class="cap">Имя и фото профиля</p>
+    </div>
+    <div>
+      <ul>
+        <li><b>Фото и имя</b> показываются в шапке. Фото обрезается до квадрата само.</li>
+        <li><b>Оформление</b>: светлая или тёмная тема. Быстро переключить можно значком луны или солнца в шапке.</li>
+        <li><b>Пароль</b> меняется в отдельном блоке профиля.</li>
+        <li><b>Выход</b> и удаление аккаунта находятся в самом низу. При удалении стираются все ваши записи и файлы.</li>
+      </ul>
+    </div>
+  </div>
+  <h3>Резервная копия</h3>
+  <p>Время от времени нажимайте «Скачать копию (.zip)». В архиве все ваши записи и файлы. Его же можно загрузить обратно кнопкой «Загрузить копию». Загружайте одну копию один раз, иначе записи задвоятся.</p>
+  <img class="shot" src="shots/profile-backup.png" alt="" style="width:75%">
+</section>
+
+<section>
+  <h2><span class="n">9</span>Приложение на телефоне</h2>
+  <div class="side narrow">
+    <div>
+      <p>Зачётку можно поставить на экран телефона значком, и она будет открываться как обычное приложение, без адресной строки. Вкладки разделов на телефоне находятся внизу экрана.</p>
+      <h3>iPhone</h3>
+      <ol>
+        <li>Откройте zachetka.grishaweb.ru в <b>Safari</b> и войдите.</li>
+        <li>Нажмите кнопку «Поделиться» (квадрат со стрелкой вверх).</li>
+        <li>Выберите «На экран Домой» и нажмите «Добавить».</li>
+      </ol>
+      <h3>Android</h3>
+      <ol>
+        <li>Откройте zachetka.grishaweb.ru в <b>Chrome</b> и войдите.</li>
+        <li>Нажмите меню (три точки справа вверху).</li>
+        <li>Выберите «Установить приложение» или «Добавить на главный экран».</li>
+      </ol>
+      <h3>Компьютер</h3>
+      <p>В Chrome, Яндекс Браузере или Edge в адресной строке есть значок установки. Можно и просто сохранить сайт в закладки.</p>
+      <div class="tip"><b>Обновления приходят сами.</b> Когда выходит новая версия, вверху появляется плашка «Вышло обновление». Нажмите «Обновить».</div>
+    </div>
+    <div><img class="shot phone" src="shots/phone-subject.png" alt="" style="width:58mm"><p class="cap">Страница предмета на телефоне</p></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">10</span>Нейросети</h2>
+  <p>К зачётке можно подключить свою нейросеть: <b>Claude</b>, <b>ChatGPT</b> или <b>Perplexity</b>. После этого в чате с ней можно спрашивать, например, «что у меня по срокам на этой неделе?» или просить «добавь задание по психологии: эссе, срок 28 октября». Нейросеть видит только ваши данные. Добавлять и менять записи она может, удалять нет.</p>
+  <ol>
+    <li>Откройте «Профиль» → «Нейросети» и скопируйте адрес для подключения.</li>
+    <li>Выберите свою нейросеть и выполните шаги из инструкции под переключателем.</li>
+    <li>Когда откроется окно зачётки «… просит доступ», войдите и нажмите «Разрешить».</li>
+  </ol>
+  <p>Подключённые нейросети видны там же. Кнопка «Отключить» сразу закрывает им доступ. Для ChatGPT и Perplexity нужна платная подписка. В Claude один такой коннектор можно подключить и на бесплатном тарифе.</p>
+  <img class="shot" src="shots/profile-ai.png" alt="" style="width:85%">
+</section>
+
+<section>
+  <h2><span class="n">11</span>Доступ и вопросы</h2>
+  <p>Доступ к зачётке может быть бессрочным или на определённый срок. Свой срок вы видите в «Профиле», в блоке «Аккаунт».</p>
+  <ul>
+    <li>За 7 дней до окончания срока вверху появится жёлтая плашка с датой.</li>
+    <li>Если срок закончился или доступ приостановлен, все ваши записи и файлы сохраняются. Их можно смотреть, открывать и скачивать, а добавлять и менять нельзя до продления.</li>
+    <li>После продления всё работает как раньше, перезагружать страницу не нужно.</li>
+  </ul>
+  <h3>Если что-то не получается</h3>
+  <ul>
+    <li><b>Забыли пароль:</b> напишите администратору.</li>
+    <li><b>Сайт не открывается</b>, а у других работает: попробуйте другой браузер, например Firefox, или другую сеть (мобильный интернет вместо Wi-Fi).</li>
+    <li><b>Видите старый вид приложения:</b> обновите страницу. На телефоне закройте приложение полностью и откройте снова.</li>
+  </ul>
+  <div class="tip"><b>Связь с администратором:</b> me@grishakr.ru. Пишите по вопросам доступа, продления и если что-то работает не так.</div>
+  <p class="foot">Моя зачётка · zachetka.grishaweb.ru · гайд для пользователей, октябрь 2026. Скриншоты сделаны на демо-данных.</p>
+</section>
+
+</body>
+</html>
