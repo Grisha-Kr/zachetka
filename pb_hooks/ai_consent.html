@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<title>Подключение нейросети · Моя зачётка</title>
+<link rel="icon" href="/icons/icon-192.png" type="image/png">
+<link rel="stylesheet" href="/app.css">
+<script>try{var t=JSON.parse(localStorage.getItem('zach_theme')||'""');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<style>
+  .ai-who{background:var(--surface-2);border-radius:10px;padding:12px 14px;display:grid;gap:6px}
+  .ai-who b{color:var(--fg)}
+  .ai-can{margin:0;padding-left:18px;display:grid;gap:4px;color:var(--muted);font-size:14px}
+  .ai-btns{display:grid;gap:8px}
+</style>
+</head>
+<body>
+<section class="auth">
+  <div class="auth-card">
+    <div class="auth-brand"><h1>Моя зачётка</h1><p>Подключение нейросети</p></div>
+    <div class="ai-who" id="who"></div>
+    <ul class="ai-can">
+      <li>смотреть ваши предметы, задания, сессии и дипломы;</li>
+      <li>добавлять и изменять записи;</li>
+      <li>удалять записи нейросеть не сможет.</li>
+    </ul>
+    <div id="body"></div>
+  </div>
+</section>
+<script src="/vendor/pocketbase.umd.js"></script>
+<script>
+(function(){
+  'use strict';
+  // Без встраивания в чужие страницы: иначе кнопку «Разрешить» можно подсунуть обманом
+  if(window.top !== window.self){ document.body.innerHTML = ''; return; }
+  var P = /*PARAMS*/null;
+  var pb = new PocketBase(location.origin);
+  var $ = function(s){ return document.querySelector(s); };
+  var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+
+  $('#who').innerHTML = '<span><b>' + esc(P.client || 'Нейросеть') + '</b> просит доступ к вашей зачётке.</span>' +
+    '<span class="muted">После ответа вы вернётесь на сайт <b>' + esc(P.host) + '</b>. Если вы не подключали нейросеть сами, нажмите «Отмена».</span>';
+
+  function showLogin(msg){
+    $('#body').innerHTML = '<form class="stack" id="f" novalidate>' +
+      '<p class="muted">Войдите в зачётку, чтобы разрешить доступ.</p>' +
+      '<label>Почта<input type="email" id="em" autocomplete="email" required></label>' +
+      '<label>Пароль<input type="password" id="pw" autocomplete="current-password" required></label>' +
+      (msg ? '<p class="form-err">' + esc(msg) + '</p>' : '') +
+      '<button class="btn primary wide" type="submit">Войти</button>' +
+      '<button class="btn wide" type="button" id="deny">Отмена</button></form>';
+    $('#f').addEventListener('submit', async function(ev){
+      ev.preventDefault();
+      var b = ev.target.querySelector('[type=submit]'); b.disabled = true;
+      try { await pb.collection('users').authWithPassword($('#em').value.trim(), $('#pw').value); showApprove(); }
+      catch(e){ showLogin(e && e.status === 400 ? 'Неверная почта или пароль.' : 'Не удалось войти. Проверьте интернет и попробуйте ещё раз.'); }
+    });
+    $('#deny').addEventListener('click', function(){ answer(true); });
+  }
+  function showApprove(msg){
+    var u = pb.authStore.record || {};
+    $('#body').innerHTML = '<div class="stack"><p class="muted">Вы вошли как <b>' + esc(u.email || u.name || '') + '</b>.</p>' +
+      (msg ? '<p class="form-err">' + esc(msg) + '</p>' : '') +
+      '<div class="ai-btns"><button class="btn primary wide" id="ok">Разрешить</button><button class="btn wide" id="deny">Отмена</button></div>' +
+      '<div class="auth-links"><button type="button" class="linkbtn" id="other">Войти в другой аккаунт</button></div></div>';
+    $('#ok').addEventListener('click', function(){ answer(false); });
+    $('#deny').addEventListener('click', function(){ answer(true); });
+    $('#other').addEventListener('click', function(){ pb.authStore.clear(); showLogin(); });
+  }
+  async function answer(deny){
+    document.querySelectorAll('#body button').forEach(function(b){ b.disabled = true; });
+    try {
+      var body = Object.assign({}, P.req, {deny: !!deny});
+      var res = await fetch('/oauth/approve', {method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': pb.authStore.token || ''}, body: JSON.stringify(body)});
+      var data = await res.json().catch(function(){ return {}; });
+      if(res.ok && data.redirect){
+        $('#body').innerHTML = '<p class="muted">' + (deny ? 'Доступ не выдан.' : 'Готово, возвращаю в нейросеть…') + '</p>';
+        location.href = data.redirect;
+        return;
+      }
+      if(res.status === 401){ pb.authStore.clear(); showLogin('Войдите ещё раз.'); return; }
+      showApprove(data.message || 'Что-то пошло не так. Начните подключение в нейросети заново.');
+    } catch(e){ showApprove('Нет связи с сервером. Попробуйте ещё раз.'); }
+  }
+
+  if(pb.authStore.isValid){
+    showApprove();
+    pb.collection('users').authRefresh().catch(function(e){ if(e && e.status){ pb.authStore.clear(); showLogin(); } });
+  } else showLogin();
+})();
+</script>
+</body>
+</html>

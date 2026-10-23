@@ -21,7 +21,7 @@ let stMenu = null; // открытый список статусов
 const SOON_DAYS = 31; // сколько дней вперёд показывать сроки на главной
 
 /* ---------- Состояние ---------- */
-const S = {inst:[], subjects:[], tasks:[], sessions:[], theses:[], stages:[], notes:[], att:[], invites:[], loaded:false};
+const S = {inst:[], subjects:[], tasks:[], sessions:[], theses:[], stages:[], notes:[], att:[], invites:[], aiGrants:[], loaded:false};
 const loadLS = (k, d) => { try { const v = localStorage.getItem('zach_'+k); return v == null ? d : JSON.parse(v); } catch(e){ return d; } };
 const saveLS = (k, v) => { try { localStorage.setItem('zach_'+k, JSON.stringify(v)); } catch(e){} };
 /* ---------- Тема оформления: auto (как в системе), light, dark ---------- */
@@ -45,7 +45,7 @@ applyTheme();
 const UI = {
   tab: loadLS('tab','home'), subjectId:null,
   f: loadLS('filters', {inst:'', subj:'', st:'open'}),
-  q:'', ch:'', noteDraft:'', noteCh:'', thesisId: loadLS('thesis', '')
+  q:'', ch:'', noteDraft:'', noteCh:'', thesisId: loadLS('thesis', ''), aiPick: loadLS('ai', 'claude')
 };
 const pb = new PocketBase(location.origin);
 pb.autoCancellation(false);
@@ -150,6 +150,7 @@ async function startApp(){
   try {
     await loadAll();
     S.loaded = true; $('#notice').hidden = true; render();
+    if(UI.tab === 'account') loadAccount();
     subscribeAll().catch(() => {});
   } catch(e){
     showNotice('Не удалось загрузить данные. ' + errText(e));
@@ -944,7 +945,7 @@ document.addEventListener('keydown', e => {
     e.preventDefault();
   }
 });
-function go(tab){ UI.tab = tab; UI.subjectId = null; saveLS('tab', tab); render(); window.scrollTo(0, 0); if(tab === 'account') loadInvites(); }
+function go(tab){ UI.tab = tab; UI.subjectId = null; saveLS('tab', tab); render(); window.scrollTo(0, 0); if(tab === 'account') loadAccount(); }
 
 document.addEventListener('click', async e => {
   if(stMenu){
@@ -1010,6 +1011,7 @@ document.addEventListener('click', async e => {
 document.addEventListener('change', async e => {
   const t = e.target;
   if(t.name === 'p-theme'){ setTheme(t.value); return; }
+  if(t.name === 'p-ai'){ UI.aiPick = t.value; saveLS('ai', t.value); $('#ai-steps').innerHTML = aiSteps(t.value); return; }
   if(t.matches('[data-filter]')){ UI.f[t.dataset.filter] = t.value; if(t.dataset.filter === 'inst') UI.f.subj = ''; saveLS('filters', UI.f); render(); return; }
   if(t.id === 'n-chf'){ UI.ch = t.value; $('#notes-list').innerHTML = notesList(); return; }
   if(t.id === 'tf-input' || t.id === 'sf-input'){
@@ -1141,6 +1143,7 @@ function vAccount(){
       <label class="fld"><span>Повторите новый</span><input type="password" id="p-new2" autocomplete="new-password"></label></div>
       <div class="actions"><button class="btn" data-act="save-pass">Сменить пароль</button></div>
     </section>
+    ${aiSection()}
     <section class="card"><h3>Резервная копия и перенос</h3>
       <p class="muted">Копия содержит все записи и файлы в одном архиве. Её же можно загрузить обратно, например на другом сервере.</p>
       <div class="actions"><button class="btn" data-act="export">Скачать копию (.zip)</button>
@@ -1168,6 +1171,53 @@ function vAccount(){
     </section>
   </div>`;
 }
+/* ---------- Нейросети ---------- */
+const AI = {
+  claude: {name:'Claude', steps:[
+    'Откройте <b>claude.ai</b> или приложение Claude на компьютере. Подходит и бесплатный тариф: на нём можно подключить один свой коннектор.',
+    'Перейдите в «Настройки» (Settings) → «Коннекторы» (Connectors).',
+    'Нажмите «Добавить свой коннектор» (Add custom connector).',
+    'Название: <b>Зачётка</b>. В поле адреса (Remote MCP server URL) вставьте адрес выше. Нажмите «Добавить» (Add).',
+    'Нажмите «Подключить» (Connect) у коннектора «Зачётка». Откроется окно зачётки: войдите и нажмите «Разрешить».',
+    'В чате нажмите «+» или значок инструментов и проверьте, что «Зачётка» включена. Подключение работает и в приложении Claude на телефоне.'
+  ]},
+  chatgpt: {name:'ChatGPT', steps:[
+    'Нужен платный тариф ChatGPT. Подключение делается на сайте <b>chatgpt.com</b> с компьютера: в приложении на телефоне свои подключения пока не работают.',
+    'Включите режим разработчика: «Настройки» (Settings) → «Приложения» (Apps) → «Расширенные настройки» (Advanced settings) → «Режим разработчика» (Developer mode). В некоторых аккаунтах этот переключатель находится в разделе «Безопасность и вход» (Security and login).',
+    'Нажмите «Создать приложение» (Create app). Если такой кнопки нет, откройте раздел «Plugins» → «+» → «Create MCP app».',
+    'Название: <b>Зачётка</b>. Адрес (MCP Server URL): вставьте адрес выше. Аутентификация (Authentication): <b>OAuth</b>. Отметьте «I understand and want to continue» и нажмите «Создать» (Create).',
+    'Откроется окно зачётки: войдите и нажмите «Разрешить».',
+    'В новом чате нажмите «+» → «Ещё» (More) → «Режим разработчика» (Developer mode) и выберите «Зачётка». Перед изменением записей ChatGPT спросит у вас подтверждение.'
+  ]},
+  perplexity: {name:'Perplexity', steps:[
+    'Нужна подписка Perplexity Pro или выше. Подключение делается на сайте <b>perplexity.ai</b> или в приложении для Mac.',
+    'Откройте «Настройки» (Settings) → «Коннекторы» (Connectors) и нажмите «+ Свой коннектор» (Custom connector). Если спросит тип, выберите «Удалённый» (Remote).',
+    'Название: <b>Зачётка</b>. Адрес (MCP Server URL): вставьте адрес выше. Аутентификация (Authentication): <b>OAuth</b>. Транспорт (Transport), если спросит: <b>Streamable HTTP</b>.',
+    'Сохраните и нажмите на карточку коннектора «Зачётка», чтобы подключить. Откроется окно зачётки: войдите и нажмите «Разрешить».',
+    'При вопросе включите «Зачётку» в источниках (Sources), чтобы Perplexity искал ответ в ваших данных.'
+  ]}
+};
+const aiSteps = k => `<ol class="ai-steps">${(AI[k] || AI.claude).steps.map(x => `<li>${x}</li>`).join('')}</ol>`;
+function aiSection(){
+  const url = location.origin + '/mcp';
+  const pick = AI[UI.aiPick] ? UI.aiPick : 'claude';
+  const list = S.aiGrants.slice().sort((a, b) => (b.last_used || 0) - (a.last_used || 0));
+  const day = ms => ms ? fmt(new Date(ms).toISOString().slice(0, 10)) : '';
+  return `<section class="card"><h3>Нейросети</h3>
+    <p class="muted">Подключите свою нейросеть, и в чате с ней можно будет спрашивать о предметах, заданиях, сессиях и дипломе, добавлять задания, менять статусы, вносить экзамены и записи к диплому. Удалять записи нейросеть не может. Нейросеть видит только ваши данные.</p>
+    <label class="fld"><span>Адрес для подключения</span><div class="ai-url"><input type="text" id="ai-url" value="${esc(url)}" readonly><button class="btn" data-act="copy-ai-url">Скопировать</button></div></label>
+    <div class="seg" role="radiogroup" aria-label="Нейросеть">${Object.keys(AI).map(k =>
+      `<input type="radio" name="p-ai" id="p-ai-${k}" value="${k}"${pick === k ? ' checked' : ''}><label for="p-ai-${k}">${AI[k].name}</label>`).join('')}</div>
+    <div id="ai-steps">${aiSteps(pick)}</div>
+    <p class="hint">Нейросети иногда переименовывают пункты меню. Если нужный не нашёлся, ищите слова «Коннекторы», «Connectors» или «Developer mode». Вопросы, которые вы задаёте нейросети, и найденные в зачётке ответы обрабатывает компания, которая делает эту нейросеть.</p>
+    <div><b class="ai-sub">Подключено</b>${list.length ? list.map(g => `<div class="inv"><div><b>${esc(g.client_name || 'Нейросеть')}</b><div class="muted">${esc(g.redirect_host || '')}${g.created ? ' · подключено ' + day(Date.parse(String(g.created).replace(' ', 'T'))) : ''}${g.last_used ? ' · последний раз ' + day(g.last_used) : ''}</div></div>
+      <div class="acts"><button class="btn sm ghost danger" data-act="del-ai" data-id="${esc(g.id)}">Отключить</button></div></div>`).join('') : '<p class="hint">Пока ни одной.</p>'}</div>
+  </section>`;
+}
+async function loadAiGrants(){
+  try { S.aiGrants = await pb.collection('ai_grants').getFullList(); if(UI.tab === 'account') render(); } catch(e){}
+}
+function loadAccount(){ loadInvites(); loadAiGrants(); }
 async function loadInvites(){
   if(!isAdmin()) return;
   try { S.invites = await pb.collection('invites').getFullList(); if(UI.tab === 'account') render(); } catch(e){}
@@ -1202,6 +1252,12 @@ async function accountAction(a, d){
         break;
       }
       case 'copy-invite': copyText(`${location.origin}/?invite=${d.code}`); break;
+      case 'copy-ai-url': copyText(location.origin + '/mcp'); break;
+      case 'del-ai': {
+        if(!arm(a, 'Точно отключить?')) return;
+        await pb.collection('ai_grants').delete(d.id);
+        S.aiGrants = S.aiGrants.filter(g => g.id !== d.id); toast('Нейросеть отключена'); render(); break;
+      }
       case 'del-invite': {
         if(!arm(a, 'Точно?')) return;
         await pb.collection('invites').delete(d.id);
