@@ -68,7 +68,9 @@ main{max-width:1040px;margin:0 auto;padding-inline:16px;padding-block:20px 48px}
   .top{backdrop-filter:none;background:var(--bg)}
   .tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);padding:4px 4px calc(4px + env(safe-area-inset-bottom,0px));justify-content:space-around}
   .tab{flex-direction:column;gap:2px;font-size:11px;padding:6px 4px;flex:1;min-width:0}
-  .tab[aria-current="page"]{background:none}
+  .tab svg{box-sizing:content-box;padding:4px 16px;border-radius:999px;transition:background .15s}
+  .tab[aria-current="page"]{background:none;font-weight:700}
+  .tab[aria-current="page"] svg{background:var(--accent-soft)}
   main{padding-block:16px 96px}
   .brand .today{display:none}
 }
