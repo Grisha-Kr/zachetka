@@ -72,8 +72,9 @@ main{max-width:1040px;margin:0 auto;padding-inline:16px;padding-block:20px 48px}
   .tab[aria-current="page"]{background:none;font-weight:700}
   .tab[aria-current="page"] svg{background:var(--accent-soft)}
   main{padding-block:16px 96px}
-  .brand .today{display:none}
+  .brand .today .d-long{display:none}
 }
+@media (min-width:761px){ .brand .today .d-short{display:none} }
 
 /* Кнопки */
 .btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:8px 14px;border-radius:9px;cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:6px;text-decoration:none;white-space:nowrap;line-height:1.3}

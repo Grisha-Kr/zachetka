@@ -137,7 +137,7 @@ async function subscribeAll(){
 
 /* ---------- Запуск ---------- */
 async function boot(){
-  { const d = new Date(), t = $('#today'); t.textContent = `${WD[d.getDay()]}, ${d.getDate()} ${MONF[d.getMonth()]}`; t.title = `${WDF[d.getDay()]}, ${d.getDate()} ${MONF[d.getMonth()]}`; }
+  { const d = new Date(), t = $('#today'), wd = WD[d.getDay()], p2 = n => String(n).padStart(2, '0'); t.innerHTML = `<span class="d-long">${wd}, ${d.getDate()} ${MONF[d.getMonth()]}</span><span class="d-short">${wd}, ${p2(d.getDate())}.${p2(d.getMonth() + 1)}</span>`; t.title = `${WDF[d.getDay()]}, ${d.getDate()} ${MONF[d.getMonth()]}`; }
   if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
   const invite = new URLSearchParams(location.search).get('invite');
   if(invite){ history.replaceState(null, '', location.pathname); }
