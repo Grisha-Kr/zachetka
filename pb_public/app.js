@@ -137,7 +137,7 @@ async function subscribeAll(){
 
 /* ---------- Запуск ---------- */
 async function boot(){
-  $('#today').textContent = (() => { const d = new Date(); return `${WDF[d.getDay()]}, ${d.getDate()} ${MONF[d.getMonth()]}`; })();
+  { const d = new Date(), t = $('#today'); t.textContent = `${WD[d.getDay()]}, ${d.getDate()} ${MONF[d.getMonth()]}`; t.title = `${WDF[d.getDay()]}, ${d.getDate()} ${MONF[d.getMonth()]}`; }
   if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
   const invite = new URLSearchParams(location.search).get('invite');
   if(invite){ history.replaceState(null, '', location.pathname); }
